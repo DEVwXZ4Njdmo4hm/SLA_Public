@@ -1,0 +1,9 @@
+[DailyReportLLMConfig]
+MODEL = "MiniMax-M2.7"
+MAX_TOKENS = 131072
+TEMPERATURE = 0.2
+TOP_P = 0.9
+TOP_K = 40
+CONTEXT_LENGTH = 262144
+
+detail_level = "full"

@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "capability-declaration.schema.json",
+  "title": "Executor Capability Declaration",
+  "description": "Validates *.toml files in configs/capabilities/.",
+  "type": "object",
+  "required": ["capability"],
+  "additionalProperties": false,
+  "properties": {
+    "capability": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["handler"],
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "handler": {
+            "type": "string",
+            "minLength": 1
+          },
+          "allowed_roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["Owner", "Administrator", "Agent", "Watcher"]
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "requires_approval": {
+            "type": "boolean",
+            "description": "If true, the agent orchestrator will downgrade this capability to a GitHub issue notification instead of executing it directly."
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "required": ["type"],
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["string", "integer", "float", "boolean"]
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "pattern": {
+                  "type": "string"
+                },
+                "min": {
+                  "type": "number"
+                },
+                "max": {
+                  "type": "number"
+                },
+                "choices": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "rate_limit": {
+            "type": "object",
+            "required": ["max_calls", "window_seconds"],
+            "additionalProperties": false,
+            "properties": {
+              "max_calls": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "window_seconds": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          },
+          "paths": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "read": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "dirs": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "write": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "dirs": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "path_params": {
+            "type": "array",
+            "description": "Explicit list of parameter names that carry file-system paths. When set, PathGuard only inspects these params.",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

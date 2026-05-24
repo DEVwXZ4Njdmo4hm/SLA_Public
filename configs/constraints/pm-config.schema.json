@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "pm-config.schema.json",
+  "title": "Package Manager Configuration",
+  "description": "Validates package manager pre-definitions (e.g., apt.toml, dnf.toml).",
+  "type": "object",
+  "required": [
+    "pm_name",
+    "commands"
+  ],
+  "properties": {
+    "pm_name": {
+      "type": "object",
+      "required": [
+        "pm_name"
+      ],
+      "properties": {
+        "pm_name": {
+          "type": "string",
+          "enum": [
+            "apt",
+            "dnf"
+          ]
+        }
+      }
+    },
+    "commands": {
+      "type": "object",
+      "required": [
+        "pm_binary",
+        "pm_commands"
+      ],
+      "properties": {
+        "pm_binary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pm_commands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "cmd"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "cmd": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "allOf": [
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "const": "install"
+                  }
+                }
+              }
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "const": "refresh"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

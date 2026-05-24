@@ -1,0 +1,15 @@
+# ==============================================================================
+# Suricata LLM Agent - APT Package Manager Commands Pre-definitions
+# ==============================================================================
+
+[pm_name]
+pm_name = "apt"
+
+[commands]
+pm_binary = "apt"
+pm_commands = [
+    { name = "install", cmd = "install -y" },
+    { name = "update", cmd = "upgrade -y" },
+    { name = "remove", cmd = "remove -y" },
+    { name = "refresh", cmd = "update" }
+]

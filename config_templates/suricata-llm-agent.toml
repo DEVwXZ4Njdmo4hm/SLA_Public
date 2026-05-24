@@ -1,0 +1,247 @@
+# ============================================================================
+# Suricata LLM Agent Configuration
+# ============================================================================
+# TOML-style configuration file. Parsed by Python tomllib.
+# ============================================================================
+
+[elasticsearch]
+host = "http://elasticsearch:9200"
+# ES user/password are stored in credentials.db and loaded at startup.
+# Uncomment for non-container / development use without credentials.db:
+# user =
+# password =
+index_pattern = "suricata-eve-*"
+
+[processing]
+batch_size = 50
+poll_interval = 5 # seconds
+max_retries = 3
+retry_interval = 10 # seconds
+empty_runs_before_index_refresh = 50
+
+[filter]
+# Allowed subsets actually processed (empty = use full supported list)
+# Values are constrained by the hard-coded supported lists in config.py.
+allowed_event_types = ["alert", "ssh", "rdp", "smb", "dns", "http", "tls"]
+allowed_l7_protocols = [
+    "dns", "mdns", "http", "https", 
+    "tls", "ssh", "rdp", "smb", 
+    "ftp", "smtp", "dhcp", "ntp", 
+    "mqtt", "sip"
+]
+allowed_l4_protocols = ["tcp", "udp", "icmp", "icmpv6"]
+allowed_l3_protocols = ["ipv4", "ipv6"]
+
+# Alert filter
+minimal_alert_severity = 2
+
+# DNS filter
+dns_rcodes = ["NXDOMAIN", "SERVFAIL", "REFUSED"]
+dns_rrtypes = ["ANY", "TXT"]
+
+# HTTP filter
+http_status_min = 400
+http_methods = ["PUT", "DELETE", "TRACE", "CONNECT", "PATCH", "PROPFIND"]
+
+# TLS filter
+tls_versions = ["SSLv3", "TLSv1", "TLSv1.1"]
+tls_require_sni = true
+# JA3/JA3S fingerprint filter – known malicious client/server fingerprints
+# These MD5 hashes are matched against tls.ja3.hash / tls.ja3s.hash fields.
+# Defaults to project-provided lists (suspicious_ja3.toml / suspicious_ja3s.toml).
+# Uncomment and set to override with custom lists.
+# ja3_hashes_file = "suspicious_ja3.toml"
+# ja3s_hashes_file = "suspicious_ja3s.toml"
+
+[llm]
+prompt_file = "llm_prompt.toml"
+memory_length = 50
+memory_max_pairs = 50
+memory_per_pair_length = 50
+# Memory strategy: "pair" (CommPairMemory, default), "global" (shared FIFO), "none" (disabled),
+# "pair_rolling" (pair + rolling compaction), "global_rolling" (global + rolling compaction),
+# "proto_pair" (pair + app_proto/event_type buckets), or
+# "proto_pair_rolling" (proto_pair + per-bucket rolling compaction).
+memory_mode = "pair"
+# Proto-pair first-level bucket eviction. 0 for memory_maxpair_lru_evict means auto.
+memory_lat_lru_evict_seconds = 3600.0
+memory_maxpair_lru_evict = 0
+# Rolling compaction: when entry count reaches threshold, merge oldest batch into one summary.
+# Only active for pair_rolling / global_rolling / proto_pair_rolling modes.
+# memory_compact_threshold = 10
+# memory_compact_batch = 8
+
+# Backend selection: "ollama" (default, local inference) or "openai" (OpenAI-compatible API).
+# When set to "openai", the agent uses /v1/chat/completions for all LLM calls,
+# compatible with OpenAI, Azure OpenAI, vLLM, and other OpenAI-API servers.
+[llm.backend]
+type = "ollama"
+# base_url = ""       # Override base URL (defaults to [ollama].base_url for ollama backend)
+# auth_token = ""     # Bearer token; prefer credentials.db llm_api_key or SURICATA_LLM_API_KEY env var
+
+# Optional: vLLM Prometheus metrics endpoint for fine-grained performance monitoring.
+# Only meaningful when type = "openai" and the backend server is vLLM.
+# [llm.backend.vllm_metrics]
+# prometheus_url = "http://vllm-host:8000/metrics"
+
+# Escalation: when enabled, logs whose initial threat assessment meets or
+# exceeds the threshold are re-analysed by a more capable model.
+[llm.escalation]
+enabled = false
+# threat_threshold = "中"              # Minimum initial threat level to trigger escalation
+# model = "gpt-4.1-mini"              # Must be declared in ModelProfiles.toml
+# max_tokens = 4096
+# context_length = 65536
+# temperature = 0.2
+# top_p = 0.9
+# top_k = 40
+# include_raw_fields = true            # Pass raw event fields to the escalation model
+
+[ollama]
+base_url = "http://host.containers.internal:11434"
+timeout = 300
+# Allow the model to include <think> reasoning blocks in responses.
+# When false (default), Ollama is instructed to suppress thinking output,
+# saving tokens and avoiding empty-response issues with thinking models.
+think = false
+keep_alive = "5m"                          # Model VRAM retention time (Ollama KV cache)
+
+[finetune]
+enabled = false                            # Enable fine-tuning data collection
+# db_path = "./finetune_data.db"           # SQLite database for training samples
+# export_dir = "./finetune_export"         # JSONL export directory
+
+[perf]
+model_profiles_file = "ModelProfiles.toml"
+auto_select = true
+
+[perf.indexes]
+analysis_value = 0.5
+
+[perf.predict]
+alpha = 0.6
+window = 5
+window_weight = 0.5
+
+[perf.stats]
+alpha = 0.5
+
+[gpu]
+# GPU hardware metrics (Improvement 30)
+# total_vram_mb = 8192
+# fp16_tflops = 0
+# mem_bandwidth_gbps = 0
+# saturation_threshold = 0.9
+
+# Cost-aware scheduling (Improvement 30.5)
+[cost]
+# aware_select = false
+# budget_per_hour = 1.0
+# weight = 0.5
+# saturation_threshold = 0.9
+
+[rmi]
+enabled = true
+host = "0.0.0.0"
+port = 8765
+
+[logging]
+output_to_elasticsearch = true
+# When log_es_host is empty, falls back to [elasticsearch] host.
+# When log_es_user / log_es_password are empty, falls back to main ES credentials.
+# Only set these if the logging ES is a DIFFERENT server from the main ES.
+# log_es_host =
+# log_es_user =
+# log_es_password =
+log_index_prefix = "suricata-ai-agent-"
+log_index_pattern = "suricata-ai-agent-*"
+log_template_name = "suricata-ai-agent-logs"
+log_field_limit = 65536
+log_flush_interval = 1.0
+log_batch_size = 200
+stats_index_prefix = "suricata-ai-agent-stats-"
+stats_index_pattern = "suricata-ai-agent-stats-*"
+stats_template_name = "suricata-ai-agent-stats"
+
+[daily_report]
+enabled = true
+llm_config_file = "daily_report_llm_conf.toml"
+fetch_size = 10000
+# Seconds of inactivity to split traffic between the same communication
+# pair into separate sessions for multi-level analysis.
+session_gap = 1800
+max_segment_events = 200
+output_dir = "/app/daily_reports"
+subject_prefix = "[Suricata AI 每日流量日报]"
+# Analysis mode: "hierarchical" (multi-level, default), "pair_only" (pair grouping, no time split or global synthesis), or "flat" (single-pass baseline).
+analysis_mode = "hierarchical"
+# When non-empty, prefixes email subject with [EXP-{tag}] and inserts a banner.
+# experiment_tag = ""
+
+[auth]
+# Path to the SQLite credentials database. When set, the U-A-P auth system
+# is enabled and all RMI endpoints (except /health, /version, /login)
+# require a valid JWT or API Key.  Service credentials (ES, JWT, Git, Mail)
+# are also loaded from this database.
+db_path = "auth-data/credentials.db"
+jwt_expire_seconds = 86400
+# jwt_secret is stored in credentials.db (written by the deploy script).
+# Owner credentials are also written directly into the database by the
+# deploy script; they do NOT appear in this file or as environment variables.
+
+[executor]
+# Enable the executor subsystem (LLM-driven action execution).
+enabled = false
+# Directory containing *.toml capability declaration files.
+capabilities_dir = "configs/capabilities"
+# Path to the SQLite audit database. Empty = auditing disabled.
+audit_db_path = "auth-data/audit.db"
+# Global file-system sandbox. All executor path operations must stay inside.
+# sandbox_root = "/app"
+# Dry-run mode: evaluate policy but never actually execute. Recommended for
+# initial deployment until trust is established.
+dry_run = true
+# Force pipeline mode even when the model supports tool calling.
+# When true, the Agent orchestrator is not created and a dedicated
+# notification email is sent instead of the tool-use fallback.
+disable_agent_mode = false
+
+[git]
+# Git integration for automated rule submission via GitHub Issues/PRs.
+enabled = false
+# GitHub personal access token is stored in credentials.db.
+# Uncomment for non-container / development use without credentials.db:
+# token = ""
+# Remote repository URL (HTTPS). Used for clone and push.
+remote_url = ""
+# Default branch to base PRs against.
+default_branch = "main"
+# Local path inside the container where the repo is cloned.
+local_repo_path = "/app/git-workspace"
+# GitHub API base URL (for github.com; change for GitHub Enterprise).
+api_base_url = "https://api.github.com"
+# Repository owner and name, e.g. "myorg" and "suricata-rules".
+repo_owner = ""
+repo_name = ""
+# Whether to auto-create PRs for suggested Suricata rules.
+auto_pr = true
+# Whether to auto-create issues for high-threat alerts during real-time analysis.
+auto_issue = true
+# Minimum threat level to trigger an automatic issue ("高" or "严重").
+issue_threat_threshold = "高"
+# Path inside the repository where generated rules are placed.
+rules_path = "rules/generated"
+# Whether to validate rules with suricata -T (requires suricata binary in container).
+validate_with_suricata = false
+# Fork mode: GitHub username that owns the fork of the target repository.
+# When set, the agent clones/pushes to the fork and creates cross-repo PRs
+# against the upstream (repo_owner). Leave empty for same-repo mode.
+fork_owner = ""
+# Time of day (HH:MM:SS, 24-hour) when the scheduled git workspace reset runs.
+# The reset discards local changes and pulls the latest from the remote.
+reset_time = "02:00:00"
+
+[mail]
+enable_notification = true
+provider = "outlook"
+sender = "you@example.com"

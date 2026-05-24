@@ -1,0 +1,29 @@
+FROM @image_url@
+
+LABEL maintainer=@maintainer@
+LABEL description="This is a container image for running a Suricata LLM Agent with Python 3.12+."
+
+WORKDIR @workdir@
+
+@@ ARGS @@
+
+COPY requirements.txt @workdir@/requirements.txt
+
+@@ PM @@
+
+# Create python venv and install python dependencies.
+RUN python3 -m venv @workdir@/venv
+RUN @workdir@/venv/bin/pip install --no-cache-dir -r @workdir@/requirements.txt
+
+COPY src/ @workdir@/suricata_llm_agent/
+COPY suspicious_ja3.toml @workdir@/suspicious_ja3.toml
+COPY suspicious_ja3s.toml @workdir@/suspicious_ja3s.toml
+COPY configs/mail_providers/ @workdir@/configs/mail_providers/
+COPY configs/capabilities/ @workdir@/configs/capabilities/
+
+@@ Extra Files @@
+
+@@ Extra CMD @@
+
+# Agent start here.
+CMD ["@workdir@/venv/bin/python3", "-m", "suricata_llm_agent.main", "--config", "@workdir@/@agent_config@"]

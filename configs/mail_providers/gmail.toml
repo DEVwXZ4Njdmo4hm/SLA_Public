@@ -1,0 +1,7 @@
+[mail_provider.gmail]
+provider = "Gmail"
+
+[mail_provider.gmail.smtp]
+auth_methods = ["password"]
+host = "smtp.gmail.com"
+port = 587

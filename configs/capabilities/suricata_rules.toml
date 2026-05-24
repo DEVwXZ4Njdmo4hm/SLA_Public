@@ -1,0 +1,32 @@
+# ==========================================================================
+# Capability: Suricata rule suggestion
+# ==========================================================================
+
+[capability.suricata_rule_suggest]
+description = "提交一条新的 Suricata IDS 检测规则。rule_text 必须是完整的 Suricata 规则语法（以 alert/drop/pass/reject 开头），系统会自动进行轻量级正则和 suricata -T 语法验证。priority 1-10（1最高）。reference 说明规则针对的威胁模式。"
+handler     = "suricata_rule_suggest"
+allowed_roles = ["Agent", "Administrator", "Owner"]
+enabled     = true
+
+[capability.suricata_rule_suggest.paths.write]
+dirs = ["{repo_dir}/{rules_path}"]
+
+[capability.suricata_rule_suggest.params.rule_text]
+type     = "string"
+required = true
+# Pattern: must begin with a valid Suricata action keyword.
+pattern  = "^(alert|drop|pass|reject) .+"
+
+[capability.suricata_rule_suggest.params.priority]
+type     = "integer"
+required = false
+min      = 1
+max      = 10
+
+[capability.suricata_rule_suggest.params.reference]
+type     = "string"
+required = false
+
+[capability.suricata_rule_suggest.rate_limit]
+max_calls      = 30
+window_seconds = 3600

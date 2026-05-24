@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "llm-prompt.schema.json",
+  "title": "LLM Prompt Templates",
+  "description": "Validates llm_prompt.toml – externalized prompt templates for Suricata LLM Agent.",
+  "type": "object",
+  "required": [
+    "realtime",
+    "daily_report"
+  ],
+  "properties": {
+    "shared": {
+      "type": "object",
+      "description": "Optional shared prompt fragment injected into all analysis templates via {shared_prompt}. Contains local network topology and N0-N3 threat classification rules.",
+      "properties": {
+        "shared_prompt": {
+          "type": "string"
+        }
+      }
+    },
+    "realtime": {
+      "$ref": "#/$defs/template_entry"
+    },
+    "daily_report": {
+      "type": "object",
+      "required": [
+        "segment",
+        "pair",
+        "final",
+        "legacy"
+      ],
+      "properties": {
+        "segment": {
+          "$ref": "#/$defs/template_entry"
+        },
+        "pair": {
+          "$ref": "#/$defs/template_entry"
+        },
+        "final": {
+          "$ref": "#/$defs/template_entry"
+        },
+        "legacy": {
+          "$ref": "#/$defs/template_entry"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "template_entry": {
+      "type": "object",
+      "required": [
+        "template"
+      ],
+      "properties": {
+        "template": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

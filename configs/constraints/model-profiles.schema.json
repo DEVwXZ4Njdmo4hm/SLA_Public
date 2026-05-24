@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "model-profiles.schema.json",
+  "title": "Model Performance Profiles",
+  "description": "Validates ModelProfiles.toml.",
+  "type": "object",
+  "required": [
+    "model"
+  ],
+  "properties": {
+    "total_vram_mb": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "model": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/model_profile"
+      }
+    }
+  },
+  "$defs": {
+    "range_int": {
+      "type": "object",
+      "required": [
+        "min",
+        "max"
+      ],
+      "properties": {
+        "min": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "model_profile": {
+      "type": "object",
+      "required": [
+        "baseline_tps",
+        "quality_score",
+        "vram_calibration_context",
+        "vram_calibration_mb",
+        "context_length",
+        "num_predict",
+        "concurrency",
+        "batch_size",
+        "poll_interval",
+        "temperature",
+        "top_p",
+        "top_k"
+      ],
+      "properties": {
+        "baseline_tps": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "quality_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "vram_calibration_context": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "vram_calibration_mb": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "context_length": {
+          "$ref": "#/$defs/range_int"
+        },
+        "num_predict": {
+          "$ref": "#/$defs/range_int"
+        },
+        "concurrency": {
+          "$ref": "#/$defs/range_int"
+        },
+        "batch_size": {
+          "$ref": "#/$defs/range_int"
+        },
+        "poll_interval": {
+          "$ref": "#/$defs/range_int"
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "top_p": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "top_k": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "total_params_b": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total model parameters in billions."
+        },
+        "active_params_b": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Active parameters per inference pass in billions (for MoE models)."
+        },
+        "bytes_per_param": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Average bytes per parameter after quantization. FP16=2.0, Q4_K_M≈0.5, Q3_K_M≈0.4375."
+        },
+        "cost_per_1k_prompt": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Cost per 1K prompt tokens in USD. 0 = free/local."
+        },
+        "cost_per_1k_completion": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Cost per 1K completion tokens in USD. 0 = free/local."
+        },
+        "max_requests_per_minute": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum requests per minute to this backend endpoint. 0 = unlimited. Shared across models using the same endpoint."
+        }
+      }
+    }
+  }
+}

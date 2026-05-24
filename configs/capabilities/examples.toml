@@ -1,0 +1,34 @@
+# ==========================================================================
+# Example capability declaration for the Executor subsystem.
+# Place *.toml files in configs/capabilities/ — they are loaded at startup.
+# ==========================================================================
+#
+# Each [capability.<name>] section declares one executable action.
+# The executor will only run capabilities declared here (white-list model).
+#
+# Real capabilities are defined in their own files:
+#   suricata_rules.toml  — Suricata IDS rule suggestion
+#   git.toml             — Git / GitHub operations
+#
+# This file serves as a reference template for writing new capabilities.
+
+# [capability.my_custom_action]
+# description = "Short description of what this action does."
+# handler     = "my_custom_action"          # must match a registered handler key
+# allowed_roles = ["Agent", "Administrator", "Owner"]
+# enabled     = true
+#
+# [capability.my_custom_action.params.input_text]
+# type     = "string"                       # "string" | "integer" | "float" | "boolean"
+# required = true
+# pattern  = "^[A-Za-z]+"                   # optional regex for string params
+#
+# [capability.my_custom_action.params.count]
+# type     = "integer"
+# required = false
+# min      = 1
+# max      = 100
+#
+# [capability.my_custom_action.rate_limit]
+# max_calls      = 20                       # 0 = unlimited
+# window_seconds = 3600

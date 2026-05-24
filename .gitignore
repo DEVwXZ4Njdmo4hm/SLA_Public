@@ -1,0 +1,58 @@
+# ============================================================================
+# Suricata LLM Agent — .gitignore
+# ============================================================================
+
+# Ignore all files and directories by default
+/*
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.egg-info/
+
+# Ignore real secrets.toml files recursively, except the public template.
+secrets.toml
+!config_templates/secrets.toml
+
+
+###################
+# ALLOW LIST
+###################
+# gitignore
+!.gitignore
+
+# ReadMe and License files
+!README.md
+!LICENSE
+
+# Python project files
+!pyproject.toml
+!requirements.txt
+!uv.lock
+
+# Program sources
+!src/
+
+# Deployment System
+!deploy.py
+!deploy/
+
+# Project configuration files
+!configs/
+
+# Tests
+!tests/
+
+# Documentation and configuration templates
+!docs/
+!config_templates/
+
+# JA3 and JA3S fingerprints
+!suspicious_ja3.toml
+!suspicious_ja3s.toml
+
+# Experiment scripts
+!exp_start.py
+
+# Experiment data and reports
+!exp_data_and_reports/

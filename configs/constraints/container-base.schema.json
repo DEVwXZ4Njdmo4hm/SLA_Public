@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "container-base.schema.json",
+  "title": "Container Base Image Configuration",
+  "description": "Validates container base configs (e.g., rhel10.1.toml, debian13.3.toml).",
+  "type": "object",
+  "required": [
+    "image",
+    "package"
+  ],
+  "properties": {
+    "image": {
+      "type": "object",
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "url": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "package": {
+      "type": "object",
+      "required": [
+        "package_manager",
+        "required_packages"
+      ],
+      "properties": {
+        "package_manager": {
+          "type": "string",
+          "enum": [
+            "apt",
+            "dnf"
+          ]
+        },
+        "required_packages": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        }
+      }
+    }
+  }
+}

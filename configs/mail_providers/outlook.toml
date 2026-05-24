@@ -1,0 +1,11 @@
+[mail_provider.outlook]
+provider = "Outlook"
+
+[mail_provider.outlook.smtp]
+auth_methods = ["OAuth2"]
+host = "smtp.office365.com"
+port = 587
+
+[mail_provider.outlook.oauth2]
+authority = "https://login.microsoftonline.com/common"
+scopes = ["https://outlook.office.com/SMTP.Send"]

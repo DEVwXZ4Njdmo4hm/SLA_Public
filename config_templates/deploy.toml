@@ -1,0 +1,61 @@
+# ============================================================================
+# Suricata LLM Agent Deployment Configuration
+# ============================================================================
+# This section defines settings related to how the Suricata LLM Agent is deployed and run
+# - Supports both host-based and rootful Podman container deployment modes.
+# - Container settings include image details, files to copy, and commands to run inside the container
+# - Service integration settings for systemd-based service management.
+# ============================================================================
+
+[general]
+deployment_work_dir = "/dev/shm/suricata-llm-agent-deploy"
+project_config_dir = "./configs"
+agent_config = "./suricata-llm-agent.toml"
+constraints_dir = "constraints"
+
+[secrets]
+secrets = "./secrets.toml"
+
+[deployment]
+# supported modes: "podman", will support "host" in the future
+mode = "podman"
+
+[container]
+base = "rhel10.1"
+maintainer = "Your Name (you@example.com)"
+workdir = "/app"
+containerfile_args = [
+    # Example: { "key": "ARG_NAME", "value": "ARG_VALUE" }
+]
+extra_commands = []
+extra_files = [
+    # Example: { "source" = "./local/path/file.txt", "destination" = "/app/file.txt" }
+]
+
+# meaningful only if deployment mode is "podman".
+[quadlet]
+enable = true
+# service file will installed to /etc/systemd/system/ if run as root, otherwise to $HOME/.config/systemd/user/
+run_as = 0 # UID
+container_name = "suricata-llm-agent"
+image_name = "localhost/suricata-llm-agent:latest"
+environment = [
+    # Example: { "key": "ENV_VAR_NAME", "value": "ENV_VAR_VALUE" }
+    { "key" = "PYTHONUNBUFFERED", "value" = 1 },
+    { "key" = "TZ", "value" = "UTC" }
+]
+
+[networking]
+Network = "your-network"
+PortMapping = { "host_netseg" = "127.0.0.1", "host_port" = "8765", "container_port" = "8765" }
+AddHost = { "hostname" = "host.containers.internal", "ip" = "host-gateway" }
+
+[auth]
+# Host directory for the persistent SQLite user database.
+# The deploy script creates this directory and initialises an empty database
+# if one does not already exist.  Quadlet bind-mounts it into the container.
+db_host_dir = "/opt/suricata-llm-agent"
+
+[git]
+# Git workspace is ephemeral — it lives only inside the container and is
+# cloned fresh on each start.  No host bind-mount is needed.

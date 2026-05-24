@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ja3-list.schema.json",
+  "title": "Suspicious JA3 Fingerprint List",
+  "description": "Validates suspicious_ja3.toml — known malicious JA3 client fingerprints.",
+  "type": "object",
+  "required": [
+    "tls_ja3_hashes"
+  ],
+  "properties": {
+    "tls_ja3_hashes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-fA-F0-9]{32}$"
+      }
+    }
+  }
+}

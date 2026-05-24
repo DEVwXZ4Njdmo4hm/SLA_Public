@@ -1,0 +1,14 @@
+# ============================================================================
+# Suricata LLM Agent Container Image Configuration
+# ============================================================================
+# Image base: Debian 13.3
+# This configuration defines how to build a container image for 
+# the Suricata LLM Agent using Debian 13.3 as the base image.
+# ============================================================================
+
+[image]
+url = "docker://debian:13.3"
+
+[package]
+package_manager = "apt"
+required_packages = ["python3", "python3-pip", "python3-venv", "git"]

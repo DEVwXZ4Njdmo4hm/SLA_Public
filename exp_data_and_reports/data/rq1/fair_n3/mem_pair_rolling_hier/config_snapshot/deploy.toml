@@ -1,0 +1,45 @@
+# ============================================================================
+# Suricata LLM Agent Deployment — Experiment Base
+# ============================================================================
+# Targets sla_test (UID 1001) rootless Podman on exp-elk-net.
+# ============================================================================
+
+[general]
+deployment_work_dir = "/dev/shm/suricata-llm-agent-deploy"
+project_config_dir = "../../../configs"
+agent_config = "./suricata-llm-agent.toml"
+constraints_dir = "constraints"
+
+[secrets]
+secrets = "./secrets.toml"
+
+[deployment]
+mode = "podman"
+
+[container]
+base = "rhel10.1"
+maintainer = "Capri XXI (qxwzj@hotmail.com)"
+workdir = "/app"
+containerfile_args = []
+extra_commands = []
+extra_files = []
+
+[quadlet]
+enable = true
+run_as = 1001
+container_name = "suricata-llm-agent"
+image_name = "localhost/suricata-llm-agent:latest"
+environment = [
+    { "key" = "PYTHONUNBUFFERED", "value" = 1 },
+    { "key" = "TZ", "value" = "UTC" }
+]
+
+[networking]
+Network = "exp-elk-net"
+PortMapping = { "host_netseg" = "127.0.0.1", "host_port" = "18765", "container_port" = "8765" }
+AddHost = { "hostname" = "host.containers.internal", "ip" = "host-gateway" }
+
+[auth]
+db_host_dir = "/home/sla_test/my_exp/sla"
+
+[git]

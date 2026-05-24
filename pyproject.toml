@@ -1,0 +1,35 @@
+[project]
+name = "suricata-llm-agent"
+version = "0.2.0"
+description = "A LLM agent package used for read and processing Suricata's eve.json from ELK to ELK, compatible ELK stack version: 8.x."
+requires-python = ">=3.12"
+
+dependencies = [
+	"elasticsearch >=8, <9",
+	"requests >=2, <3",
+	"python-dateutil >=2.8, <3",
+	"fastapi >=0.110, <1",
+	"uvicorn >=0.27, <1",
+	"msal >=1.0, <2",
+	"msal-extensions >=1.0, <2",
+	"pydantic >=2.0, <3",
+	"pytest >=7.0, <8",
+	"pytest-cov >=3.0, <4",
+	"jsonschema >=4.0, <5",
+	"bcrypt >=4.0, <5",
+	"httpx",
+	"pytest-asyncio >=0.20.0, <1.0.0"
+]
+
+authors= [
+	{ name = "Capri XXI", email = "qxwzj@hotmail.com" }
+]
+license="MIT"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[build-system]
+requires = ["setuptools >= 72.0"]
+build-backend = "setuptools.build_meta"

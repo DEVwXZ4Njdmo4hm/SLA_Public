@@ -1,0 +1,13 @@
+[DailyReportLLMConfig]
+MODEL = "YOUR_MODEL:TAG"
+MAX_TOKENS = 4096
+TEMPERATURE = 0.2
+TOP_P = 0.9
+TOP_K = 40
+CONTEXT_LENGTH = 65536
+
+# Event detail level in daily report prompts:
+#   "minimal"  = timestamp + event_type + ai.summary (default)
+#   "extended" = adds alert signature, ports, proto, security_hint, TLS/DNS/HTTP context
+#   "full"     = includes all available _source fields as JSON
+detail_level = "minimal"

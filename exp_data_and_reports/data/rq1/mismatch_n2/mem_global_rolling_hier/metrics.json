@@ -1,0 +1,79 @@
+{
+  "config_group": "mem_global_rolling_hier",
+  "total_docs": 3621689,
+  "ai_processed": 3621689,
+  "binary_tp": 527,
+  "binary_fp": 5768,
+  "binary_tn": 5,
+  "binary_fn": 0,
+  "binary_precision": 0.08371723590150913,
+  "binary_recall": 1.0,
+  "binary_f1": 0.1545001465845793,
+  "accuracy_5level": 0.0009523809523809524,
+  "weighted_f1": 6.816632583503749e-06,
+  "precision_high": 0.08588657105606258,
+  "recall_high": 1.0,
+  "consistency_mean_std": 0.3326830538708334,
+  "consistency_benign_mean_std": 0.3338397992604659,
+  "consistency_benign_pairs": 130,
+  "threat_escalation_rho": 0.08886634904253991,
+  "threat_escalation_p_value": 0.3108992631971026,
+  "threat_escalation_pairs": 131,
+  "latency_p50": 11984.241166,
+  "latency_p95": 21610.235449,
+  "latency_p99": 22481.294097,
+  "per_event_type": {
+    "alert": {
+      "count": 180,
+      "tp": 0,
+      "fp": 180,
+      "tn": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "http": {
+      "count": 457,
+      "tp": 0,
+      "fp": 452,
+      "tn": 5,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "smb": {
+      "count": 3920,
+      "tp": 0,
+      "fp": 3920,
+      "tn": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "ssh": {
+      "count": 1492,
+      "tp": 527,
+      "fp": 965,
+      "tn": 0,
+      "fn": 0,
+      "precision": 0.3532,
+      "recall": 1.0,
+      "f1": 0.522
+    },
+    "tls": {
+      "count": 251,
+      "tp": 0,
+      "fp": 251,
+      "tn": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    }
+  },
+  "total_prompt_tokens": 30997806,
+  "total_completion_tokens": 1507825
+}

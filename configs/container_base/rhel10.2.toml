@@ -1,0 +1,14 @@
+# ============================================================================
+# Suricata LLM Agent Container Image Configuration
+# ============================================================================
+# Image base: RHEL 10.2 UBI
+# This configuration defines how to build a container image for
+# the Suricata LLM Agent using Red Hat's Universal Base Image (UBI) 10.2.
+# ============================================================================
+
+[image]
+url = "registry.access.redhat.com/ubi10/ubi:10.2"
+
+[package]
+package_manager = "dnf"
+required_packages = ["python3", "python3-pip", "git"]

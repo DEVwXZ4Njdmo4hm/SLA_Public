@@ -1,0 +1,15 @@
+# ==============================================================================
+# Suricata LLM Agent - DNF Package Manager Commands Pre-definitions
+# ==============================================================================
+
+[pm_name]
+pm_name = "dnf"
+
+[commands]
+pm_binary = "dnf"
+pm_commands = [
+    { name = "install", cmd = "install -y" },
+    { name = "update", cmd = "update -y" },
+    { name = "remove", cmd = "remove -y" },
+    { name = "refresh", cmd = "makecache" }
+]

@@ -1,0 +1,49 @@
+# =======================================================================================
+# Suricata LLM Agent Quadlet Container Unit File
+# =======================================================================================
+# This unit file defines a containerized service for the Suricata LLM Agent,
+# which processes Suricata alerts and logs them to Elasticsearch.
+# It ensures the container starts after Elasticsearch is available and configures
+# necessary environment variables, volumes, and network settings.
+# =======================================================================================
+
+[Unit]
+Description=Suricata LLM Agent Service
+After=elasticsearch.service
+Requires=elasticsearch.service
+
+[Container]
+Image=@image_name@
+ContainerName=@container_name@
+
+Network=@network@
+PublishPort=@port_mapping@
+AddHost=@addhost@
+
+# Credentials database bind mount (contains users + all service secrets)
+@@ Auth Volume @@
+
+# Git workspace (ephemeral, container-only — cloned fresh on each start)
+@@ Git Volume @@
+
+# Other settings
+@@ Environment @@
+
+# Graceful shutdown: give the application enough time to finish
+# sending the shutdown notification email and flushing ES logs.
+# This controls podman's --stop-timeout (default is only 10s).
+StopTimeout=90
+
+# Logging Configuration
+LogDriver=journald
+
+# Note: All service credentials (ES, JWT, Git, Mail) are stored in
+# credentials.db and loaded at startup.  No Podman secrets or
+# credential-bearing environment variables are required.
+
+[Service]
+TimeoutStartSec=300
+TimeoutStopSec=90
+
+[Install]
+WantedBy=multi-user.target default.target

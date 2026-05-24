@@ -1,0 +1,66 @@
+# ============================================================================
+# Model Performance Profiles — Experiment Base
+# ============================================================================
+# Local Ollama model only. Zero API cost.
+# qooba/qwen3-coder-30b-a3b-instruct:q3_k_m (30B MoE, 3B active): realtime + daily report.
+# ============================================================================
+
+[model."qooba/qwen3-coder-30b-a3b-instruct:q3_k_m"]
+backend_type = "ollama"
+
+baseline_tps = 40.0
+quality_score = 0.7
+
+vram_calibration_context = 13295
+vram_calibration_mb = 26624
+
+context_length = { min = 8192, max = 16384 }
+num_predict = { min = 512, max = 4096 }
+concurrency = { min = 4, max = 8 }
+batch_size = { min = 50, max = 80 }
+poll_interval = { min = 5, max = 30 }
+
+temperature = 0.2
+top_p = 0.9
+top_k = 40
+
+total_params_b = 30.0
+active_params_b = 3.0
+bytes_per_param = 0.4375
+
+cost_per_1k_prompt = 0.0
+cost_per_1k_completion = 0.0
+max_requests_per_minute = 0
+
+# ---------------------------------------------------------------------------
+# Remote model: MiniMax-M2.7 — daily report generation
+# ---------------------------------------------------------------------------
+[model."MiniMax-M2.7"]
+backend_type = "openai"
+backend_base_url = "https://api.minimaxi.com"
+# backend_auth_token: uses global LLM_BACKEND_AUTH_TOKEN from secrets.toml [llm].api_key
+
+baseline_tps = 60.0
+quality_score = 0.92
+
+vram_calibration_context = 0
+vram_calibration_mb = 0
+
+context_length = { min = 65536, max = 262144 }
+num_predict = { min = 2048, max = 131072 }
+concurrency = { min = 1, max = 2 }
+batch_size = { min = 1, max = 5 }
+poll_interval = { min = 30, max = 120 }
+
+temperature = 0.2
+top_p = 0.9
+top_k = 40
+supports_tool_use = true
+
+total_params_b = 0.0
+active_params_b = 0.0
+bytes_per_param = 0.0
+
+cost_per_1k_prompt = 0.0021
+cost_per_1k_completion = 0.0084
+max_requests_per_minute = 500

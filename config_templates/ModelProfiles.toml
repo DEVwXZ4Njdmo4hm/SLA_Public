@@ -1,0 +1,89 @@
+# ============================================================================
+# Model Performance Profiles
+# ============================================================================
+# Baseline performance characteristics for each available model.
+# Used by the adaptive performance engine to
+# estimate capacity and compute optimal parameters at runtime.
+#
+# Each [model."<name>"] section corresponds to an Ollama model tag.
+# The adaptive engine refines baseline_tps at runtime via actual Ollama
+# response metrics (eval_count / eval_duration).
+#
+# Global:
+#   total_vram_mb               – (DEPRECATED: moved to [gpu] in suricata-llm-agent.toml)
+#                                 Kept here for backward compatibility only.
+#
+# Per model:
+#   baseline_tps                – Estimated token generation speed (tokens/sec).
+#                                 Automatically refined at runtime.
+#   quality_score               – Relative output quality (0.0 ~ 1.0).
+#   vram_calibration_context    – Context length at which VRAM was measured.
+#   vram_calibration_mb         – Observed VRAM usage (MB) at that context.
+#   context_length              – Allowed range for adaptive context tuning.
+#   num_predict                 – Allowed range for max output token count.
+#   concurrency                 – Allowed range for concurrent LLM requests.
+#   batch_size                  – Allowed range for batch size (logs/cycle).
+#   poll_interval               – Allowed range for polling interval (seconds).
+#   temperature                 – Fixed temperature for this model.
+#   top_p                       – Fixed top_p for this model.
+#   top_k                       – Fixed top_k for this model.
+#   supports_tool_use           – Optional override for tool-use detection.
+#                                 true = force enable, false = force disable,
+#                                 omit = auto-detect at runtime via Ollama API.
+#   backend_type                – Backend to use: "ollama" (default) or "openai".
+#   backend_base_url            – Override the global base URL for this model.
+#                                 Omit or leave empty to use the global setting.
+#   backend_auth_token          – Override the global auth token / API key.
+#                                 Omit or leave empty to use the global setting.
+#   total_params_b              – Total model parameters in billions.
+#   active_params_b             – Active parameters per inference (billions).
+#                                 For dense models, same as total_params_b.
+#                                 For MoE models, the activated expert subset.
+#   bytes_per_param             – Avg bytes per parameter after quantization.
+#                                 FP16=2.0, Q8_0=1.0, Q4_K_M≈0.5, Q3_K_M≈0.4375.
+#   cost_per_1k_prompt          – Cost per 1K prompt tokens in USD (0 = free/local).
+#   cost_per_1k_completion      – Cost per 1K completion tokens in USD (0 = free/local).
+# ============================================================================
+
+# Total system GPU VRAM (MB).
+# NOTE: Prefer [gpu].total_vram_mb in suricata-llm-agent.toml.
+# Kept here for backward compatibility; [gpu] takes precedence.
+total_vram_mb = 8192
+
+[model."your-model:tag"]
+# Backend type for this model ("ollama" or "openai"). Defaults to global LLM_BACKEND_TYPE.
+# backend_type = "ollama"
+# Override global base URL for this model (leave commented to use global).
+# backend_base_url = ""
+# Override global auth token for this model (leave commented to use global).
+# backend_auth_token = ""
+# Estimated baseline token generation speed (tokens/sec).
+baseline_tps = 30.0
+# Relative output quality score (0.0 ~ 1.0).
+quality_score = 0.7
+
+# VRAM calibration reference point (ollama ps).
+vram_calibration_context = 8192
+vram_calibration_mb = 4096
+
+# Adaptive parameter ranges
+context_length = { min = 8192, max = 16384 }
+num_predict = { min = 128, max = 512 }
+concurrency = { min = 4, max = 8 }
+batch_size = { min = 50, max = 80 }
+poll_interval = { min = 5, max = 30 }
+
+# Fixed generation parameters
+temperature = 0.2
+top_p = 0.9
+top_k = 40
+
+# GPU performance quantification (Improvement 30)
+# total_params_b = 0.0
+# active_params_b = 0.0
+# bytes_per_param = 0.0
+
+# Cost factors (Improvement 30.5)
+# cost_per_1k_prompt = 0.0
+# cost_per_1k_completion = 0.0
+# max_requests_per_minute = 0

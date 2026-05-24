@@ -1,0 +1,172 @@
+[elasticsearch]
+host = "http://exp-elasticsearch:9200"
+index_pattern = "suricata-eve-*"
+
+[processing]
+batch_size = 50
+poll_interval = 5
+max_retries = 3
+retry_interval = 10
+empty_runs_before_index_refresh = 50
+
+[filter]
+allowed_event_types = [
+    "alert",
+    "ssh",
+    "rdp",
+    "smb",
+    "dns",
+    "http",
+    "tls",
+]
+allowed_l7_protocols = [
+    "dns",
+    "mdns",
+    "http",
+    "https",
+    "tls",
+    "ssh",
+    "rdp",
+    "smb",
+    "ftp",
+    "smtp",
+    "dhcp",
+    "ntp",
+    "mqtt",
+    "sip",
+]
+allowed_l4_protocols = [
+    "tcp",
+    "udp",
+    "icmp",
+    "icmpv6",
+]
+allowed_l3_protocols = [
+    "ipv4",
+    "ipv6",
+]
+minimal_alert_severity = 2
+dns_rcodes = [
+    "NXDOMAIN",
+    "SERVFAIL",
+    "REFUSED",
+]
+dns_rrtypes = [
+    "ANY",
+    "TXT",
+]
+http_status_min = 400
+http_methods = [
+    "PUT",
+    "DELETE",
+    "TRACE",
+    "CONNECT",
+    "PATCH",
+    "PROPFIND",
+]
+tls_versions = [
+    "SSLv3",
+    "TLSv1",
+    "TLSv1.1",
+]
+tls_require_sni = true
+
+[llm]
+prompt_file = "llm_prompt.toml"
+memory_length = 50
+memory_max_pairs = 50
+memory_per_pair_length = 50
+memory_mode = "global_rolling"
+memory_compact_threshold = 30
+memory_compact_batch = 10
+memory_compact_cooldown = 3.0
+
+[llm.backend]
+type = "ollama"
+
+[llm.escalation]
+enabled = false
+
+[ollama]
+base_url = "http://host.containers.internal:15728"
+timeout = 300
+think = false
+keep_alive = "10m"
+
+[finetune]
+enabled = true
+db_path = "/app/finetune_data.db"
+export_dir = "/app/finetune_export"
+
+[perf]
+model_profiles_file = "ModelProfiles.toml"
+auto_select = true
+
+[perf.indexes]
+analysis_value = 0.5
+
+[perf.predict]
+alpha = 0.6
+window = 5
+window_weight = 0.5
+
+[perf.stats]
+alpha = 0.5
+
+[gpu]
+total_vram_mb = 61440
+fp16_tflops = 130.56
+mem_bandwidth_gbps = 1152.0
+saturation_threshold = 0.9
+
+[cost]
+aware_select = false
+weight = 0.6
+budget_per_hour = 0.0
+saturation_threshold = 0.85
+
+[rmi]
+enabled = true
+host = "0.0.0.0"
+port = 8765
+
+[logging]
+output_to_elasticsearch = true
+log_index_prefix = "suricata-ai-agent-"
+log_index_pattern = "suricata-ai-agent-*"
+log_template_name = "suricata-ai-agent-logs"
+log_field_limit = 65536
+log_flush_interval = 1.0
+log_batch_size = 200
+stats_index_prefix = "suricata-ai-agent-stats-"
+stats_index_pattern = "suricata-ai-agent-stats-*"
+stats_template_name = "suricata-ai-agent-stats"
+
+[daily_report]
+enabled = true
+llm_config_file = "daily_report_llm_conf.toml"
+fetch_size = 10000
+session_gap = 1800
+output_dir = "/app/daily_reports"
+subject_prefix = "[Suricata AI 每日流量日报]"
+analysis_mode = "hierarchical"
+experiment_tag = "RQ1-GlobalMemRolling"
+
+[auth]
+db_path = "auth-data/credentials.db"
+jwt_expire_seconds = 21600
+
+[executor]
+enabled = true
+capabilities_dir = "configs/capabilities"
+audit_db_path = "auth-data/audit.db"
+dry_run = false
+disable_agent_mode = true
+
+[git]
+enabled = false
+
+[mail]
+enable_notification = true
+provider = "outlook"
+sender = "[REDACTED FOR PRIVACY]"

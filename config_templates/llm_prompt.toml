@@ -1,0 +1,137 @@
+# ============================================================================
+# LLM Prompt Templates
+# ============================================================================
+# Externalized prompt templates for Suricata LLM Agent.
+# Each section corresponds to a specific analysis scenario.
+#
+# Placeholder variables use Python str.format_map() syntax: {variable_name}
+# Unrecognized placeholders are preserved as-is (safe dict).
+# Literal braces in output (e.g. JSON examples) must be doubled: {{ }}
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# Shared prompt fragment — injected via {shared_prompt} placeholder
+# Contains local network topology and N0-N3 threat classification rules.
+# Used by: realtime, realtime_agent, escalation, daily_report.*
+# May be empty or omitted entirely.
+# ---------------------------------------------------------------------------
+[shared]
+shared_prompt = """
+"""
+
+# ---------------------------------------------------------------------------
+# Real-time log analysis prompt
+# ---------------------------------------------------------------------------
+[realtime]
+template = """
+"""
+
+# ---------------------------------------------------------------------------
+# Real-time agent-mode prompt (tool-calling / ReAct)
+# Used when the model supports tool calling. Split into system + user.
+# Available placeholders (user_template):
+#   {event_type}, {timestamp}, {src_ip}, {src_city}, {src_country}, {src_asn},
+#   {dest_ip}, {dest_city}, {dest_country}, {dest_asn}, {src_port}, {dest_port},
+#   {src_hostname}, {dest_hostname}, {proto}, {alert}, {severity}, {is_noise},
+#   {doc_id}, {memory_block}
+# ---------------------------------------------------------------------------
+[realtime_agent]
+system_template = """
+"""
+user_template = """
+"""
+
+# ---------------------------------------------------------------------------
+# Daily-report agent-mode prompt (rule generation with tool calling)
+# Used when the model supports tool calling in daily report rule generation.
+# Available placeholders (user_template):
+#   {report_date}, {high_pairs_text}, {existing_sids_text}
+# ---------------------------------------------------------------------------
+[daily_report_agent]
+system_template = """
+"""
+user_template = """
+"""
+
+# ---------------------------------------------------------------------------
+# Rule generation prompt (non-agent / pipeline mode)
+# Available placeholders:
+#   {analysis_summary}, {high_threat_pairs}, {existing_sids}
+# ---------------------------------------------------------------------------
+[rule_generation]
+template = """
+"""
+
+# ---------------------------------------------------------------------------
+# Daily report: time-segment level analysis
+# ---------------------------------------------------------------------------
+[daily_report.segment]
+template = """
+"""
+
+# ---------------------------------------------------------------------------
+# Daily report: communication-pair level analysis
+# ---------------------------------------------------------------------------
+[daily_report.pair]
+template = """
+"""
+
+# ---------------------------------------------------------------------------
+# Daily report: final report (multi-level)
+# ---------------------------------------------------------------------------
+[daily_report.final]
+template = """
+"""
+
+# ---------------------------------------------------------------------------
+# Daily report: legacy single-pass prompt (fallback)
+# ---------------------------------------------------------------------------
+[daily_report.legacy]
+template = """
+"""
+
+# ---------------------------------------------------------------------------
+# Escalation prompt — used when real-time analysis triggers an upgrade
+# ---------------------------------------------------------------------------
+[escalation]
+template = """你是一位高级网络安全分析师。一个初步分析系统已经将以下网络通信事件标记为潜在威胁。
+请基于以下信息进行深度分析，并给出更精确的威胁评估。
+
+## 原始事件信息
+{raw_event_block}
+
+## 初步分析结果
+{initial_analysis}
+
+## 该通信对的历史记录
+{memory_block}
+
+请提供更精确的威胁评估和详细的安全建议。输出格式和初步分析相同（JSON），必须返回以下结构的JSON，必须使用中文：
+{{
+  "summary": "完善的日志概述：谁(主机名/IP):端口 → 谁(主机名/IP):端口；什么协议，什么行为。≤150字",
+  "threat_level": "无危|低|中|高|严重",
+  "security_hint": "该事件的安全含义，≤80字",
+  "recommendation": "建议措施，≤100字"
+}}
+
+注意：
+- 如果初步分析的判断有误（过高或过低），请在你的分析中明确纠正
+- 结合通信对历史记录进行关联分析，识别可能的攻击模式或持续性威胁
+- 你的判断将用于最终威胁等级确定，请务必准确"""
+
+[memory_compact]
+template = """你是一个网络安全运维日志分析助手。请将以下 {entry_count} 条关于同一通信对的历史分析记录压缩为一段简洁的综合摘要。
+
+要求：
+1. 保留关键时间节点和事件类型
+2. 保留威胁演变趋势（是否升级/降级/持续）
+3. 保留因果关系和关联线索
+4. 去除重复和冗余描述
+5. 总长度控制在 300 字以内
+
+通信对：{pair_key}
+
+历史记录：
+{entries_text}
+
+请直接输出压缩后的摘要，不要添加任何前缀或解释："""

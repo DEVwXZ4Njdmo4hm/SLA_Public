@@ -1,0 +1,765 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent-config.schema.json",
+  "title": "Suricata LLM Agent Configuration",
+  "description": "Validates suricata-llm-agent.toml.",
+  "type": "object",
+  "required": [
+    "elasticsearch",
+    "processing",
+    "filter",
+    "llm",
+    "ollama",
+    "perf",
+    "logging"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "elasticsearch": {
+      "type": "object",
+      "required": [
+        "host",
+        "index_pattern"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "host": {
+          "type": "string",
+          "pattern": "^https?://.+"
+        },
+        "user": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "index_pattern": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "processing": {
+      "type": "object",
+      "required": [
+        "batch_size",
+        "poll_interval",
+        "max_retries",
+        "retry_interval"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "batch_size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "poll_interval": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_retries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "retry_interval": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "empty_runs_before_index_refresh": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "filter": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowed_event_types": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "alert",
+              "dns",
+              "http",
+              "tls",
+              "ssh",
+              "smtp",
+              "ftp",
+              "smb",
+              "rdp",
+              "dhcp",
+              "ntp",
+              "mqtt",
+              "sip",
+              "modbus",
+              "fileinfo",
+              "flow"
+            ]
+          }
+        },
+        "allowed_l7_protocols": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "dns",
+              "mdns",
+              "http",
+              "https",
+              "ftp",
+              "smtp",
+              "ssh",
+              "tls",
+              "smb",
+              "rdp",
+              "dhcp",
+              "ntp",
+              "mqtt",
+              "sip",
+              "modbus"
+            ]
+          }
+        },
+        "allowed_l4_protocols": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "tcp",
+              "udp",
+              "icmp",
+              "icmpv6",
+              "sctp"
+            ]
+          }
+        },
+        "allowed_l3_protocols": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "ipv4",
+              "ipv6",
+              "arp"
+            ]
+          }
+        },
+        "minimal_alert_severity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4
+        },
+        "dns_rcodes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "dns_rrtypes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "http_status_min": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 599
+        },
+        "http_methods": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "tls_versions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "tls_require_sni": {
+          "type": "boolean"
+        },
+        "ja3_hashes_file": {
+          "type": "string",
+          "minLength": 1,
+          "x-deploy-file": true,
+          "x-deploy-file-schema": "ja3-list.schema.json"
+        },
+        "ja3s_hashes_file": {
+          "type": "string",
+          "minLength": 1,
+          "x-deploy-file": true,
+          "x-deploy-file-schema": "ja3s-list.schema.json"
+        }
+      }
+    },
+    "llm": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "prompt_file": {
+          "type": "string",
+          "minLength": 1,
+          "x-deploy-file": true,
+          "x-deploy-file-schema": "llm-prompt.schema.json"
+        },
+        "memory_length": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "memory_max_pairs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "memory_per_pair_length": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "memory_mode": {
+          "type": "string",
+          "enum": [
+            "pair",
+            "global",
+            "none",
+            "pair_rolling",
+            "global_rolling",
+            "proto_pair",
+            "proto_pair_rolling"
+          ],
+          "default": "pair",
+          "description": "Memory strategy: pair (CommPairMemory), global (FIFO baseline), none (disabled), pair_rolling (pair + compaction), global_rolling (global + compaction), proto_pair (pair + protocol/event bucket), or proto_pair_rolling (proto_pair + per-bucket compaction)."
+        },
+        "memory_lat_lru_evict_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 3600.0,
+          "description": "Last-active-time eviction threshold in seconds for proto_pair / proto_pair_rolling first-level pair buckets."
+        },
+        "memory_maxpair_lru_evict": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Number of oldest first-level pair buckets to evict when proto_pair modes reach memory_max_pairs. 0 = automatic; explicit values must satisfy 2 <= value < memory_max_pairs at runtime/preflight."
+        },
+        "memory_compact_threshold": {
+          "type": "integer",
+          "minimum": 3,
+          "default": 10,
+          "description": "Entry count threshold to trigger rolling compaction (pair_rolling / global_rolling only)."
+        },
+        "memory_compact_batch": {
+          "type": "integer",
+          "minimum": 2,
+          "default": 8,
+          "description": "Number of oldest entries to merge per compaction (must be >= 2 and < memory_compact_threshold)."
+        },
+        "memory_compact_cooldown": {
+          "type": "number",
+          "minimum": 0,
+          "default": 2.0,
+          "description": "Cooldown window in seconds after a successful global_rolling compaction before the next one can be triggered."
+        },
+        "backend": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["ollama", "openai"],
+              "default": "ollama"
+            },
+            "base_url": {
+              "type": "string",
+              "pattern": "^https?://.+"
+            },
+            "auth_token": {
+              "type": "string"
+            },
+            "vllm_metrics": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "prometheus_url": {
+                  "type": "string",
+                  "pattern": "^https?://.+"
+                }
+              }
+            }
+          }
+        },
+        "escalation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "threat_threshold": {
+              "type": "string",
+              "enum": ["无危", "低", "中", "高", "严重"]
+            },
+            "model": {
+              "type": "string"
+            },
+            "max_tokens": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "context_length": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "temperature": {
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 2.0
+            },
+            "top_p": {
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 1.0
+            },
+            "top_k": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "include_raw_fields": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "ollama": {
+      "type": "object",
+      "required": [
+        "base_url",
+        "timeout"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "base_url": {
+          "type": "string",
+          "pattern": "^https?://.+"
+        },
+        "timeout": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "think": {
+          "type": "boolean"
+        },
+        "keep_alive": {
+          "type": "string",
+          "description": "Ollama model VRAM retention time (e.g. '5m', '0' = unload immediately). Enables KV cache reuse across requests."
+        }
+      }
+    },
+    "finetune": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable fine-tuning training data collection."
+        },
+        "db_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to the SQLite database for training samples."
+        },
+        "export_dir": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Directory for JSONL export files."
+        }
+      }
+    },
+    "perf": {
+      "type": "object",
+      "required": [
+        "model_profiles_file",
+        "auto_select"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "model_profiles_file": {
+          "type": "string",
+          "minLength": 1,
+          "x-deploy-file": true,
+          "x-deploy-file-schema": "model-profiles.schema.json"
+        },
+        "auto_select": {
+          "type": "boolean"
+        },
+        "indexes": {
+          "type": "object",
+          "properties": {
+            "analysis_value": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "exclusiveMaximum": 1
+            }
+          }
+        },
+        "predict": {
+          "type": "object",
+          "properties": {
+            "alpha": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "window": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "window_weight": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "stats": {
+          "type": "object",
+          "properties": {
+            "alpha": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    },
+    "gpu": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "total_vram_mb": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Total available GPU VRAM in MB."
+        },
+        "fp16_tflops": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Local GPU FP16 compute capability in TFLOPS. 0 = disabled."
+        },
+        "mem_bandwidth_gbps": {
+          "type": "number",
+          "minimum": 0,
+          "description": "GPU memory bandwidth in GB/s. Multi-GPU without NVLink: per-card × count."
+        },
+        "saturation_threshold": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "description": "Fraction of theoretical max TPS at which GPU is considered saturated."
+        }
+      }
+    },
+    "cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "aware_select": {
+          "type": "boolean",
+          "description": "Enable cost-aware scheduling. Default: false."
+        },
+        "budget_per_hour": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Hourly cost budget in USD."
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Cost constraint weight (0=ignore, 1=maximum constraint)."
+        },
+        "saturation_threshold": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "description": "Fraction of budget at which cost saturation signal is triggered."
+        }
+      }
+    },
+    "rmi": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "host": {
+          "type": "string",
+          "minLength": 1
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        }
+      }
+    },
+    "logging": {
+      "type": "object",
+      "required": [
+        "output_to_elasticsearch"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "output_to_elasticsearch": {
+          "type": "boolean"
+        },
+        "log_es_host": {
+          "type": "string"
+        },
+        "log_es_user": {
+          "type": "string"
+        },
+        "log_es_password": {
+          "type": "string"
+        },
+        "log_index_prefix": {
+          "type": "string",
+          "minLength": 1
+        },
+        "log_index_pattern": {
+          "type": "string",
+          "minLength": 1
+        },
+        "log_template_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "log_field_limit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "log_flush_interval": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "log_batch_size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "stats_index_prefix": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stats_index_pattern": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stats_template_name": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "daily_report": {
+      "type": "object",
+      "required": [
+        "enabled"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "llm_config_file": {
+          "type": "string",
+          "minLength": 1,
+          "x-deploy-file": true
+        },
+        "fetch_size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "session_gap": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Seconds of inactivity to split traffic into sessions."
+        },
+        "max_segment_events": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 200,
+          "description": "Maximum events sent to one daily-report segment LLM call."
+        },
+        "output_dir": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject_prefix": {
+          "type": "string"
+        },
+        "analysis_mode": {
+          "type": "string",
+          "enum": ["hierarchical", "pair_only", "flat"],
+          "default": "hierarchical",
+          "description": "Report analysis mode: hierarchical (multi-level), pair_only (pair grouping without time segmentation or global synthesis), or flat (single-pass baseline)."
+        },
+        "experiment_tag": {
+          "type": "string",
+          "description": "When non-empty, prefixes email subject with [EXP-{tag}] and inserts a banner in the report body."
+        }
+      }
+    },
+    "mail": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enable_notification": {
+          "type": "boolean"
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sender": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "db_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jwt_secret": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jwt_expire_seconds": {
+          "type": "integer",
+          "minimum": 60
+        }
+      }
+    },
+    "executor": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "capabilities_dir": {
+          "type": "string",
+          "default": "configs/capabilities",
+          "x-deploy-dir": true,
+          "x-deploy-dir-schema": "capability-declaration.schema.json"
+        },
+        "audit_db_path": {
+          "type": "string"
+        },
+        "sandbox_root": {
+          "type": "string"
+        },
+        "dry_run": {
+          "type": "boolean"
+        },
+        "disable_agent_mode": {
+          "type": "boolean",
+          "description": "Force pipeline mode even when the model supports tool calling. A dedicated notification email is sent."
+        }
+      },
+      "additionalProperties": false
+    },
+    "git": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable git integration for automated rule submission via GitHub Issues/PRs."
+        },
+        "token": {
+          "type": "string",
+          "description": "GitHub Personal Access Token. Stored in credentials.db at deployment; only set here for non-container / development use."
+        },
+        "remote_url": {
+          "type": "string",
+          "anyOf": [
+            {"const": ""},
+            {"pattern": "^https?://.+"}
+          ],
+          "description": "HTTPS URL of the remote repository. Empty when derived from repo_owner + repo_name."
+        },
+        "default_branch": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Default branch to base PRs against (e.g. 'main' or 'master')."
+        },
+        "local_repo_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Local path inside the container where the repository is cloned."
+        },
+        "api_base_url": {
+          "type": "string",
+          "pattern": "^https?://.+"
+        },
+        "repo_owner": {
+          "type": "string",
+          "description": "GitHub repository owner (organization or username). Used for API calls and upstream PR target."
+        },
+        "repo_name": {
+          "type": "string",
+          "description": "GitHub repository name. Combined with repo_owner for API calls."
+        },
+        "auto_pr": {
+          "type": "boolean",
+          "description": "Whether to auto-create PRs for suggested Suricata rules after daily report generation."
+        },
+        "auto_issue": {
+          "type": "boolean",
+          "description": "Whether to auto-create GitHub issues for high-threat alerts during real-time analysis."
+        },
+        "issue_threat_threshold": {
+          "type": "string",
+          "enum": ["无危", "低", "中", "高", "严重"],
+          "description": "Minimum threat level that triggers automatic GitHub issue creation."
+        },
+        "rules_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Repository-relative path where generated Suricata rules are placed."
+        },
+        "validate_with_suricata": {
+          "type": "boolean",
+          "description": "Whether to validate generated rules with 'suricata -T' (requires suricata binary in the container)."
+        },
+        "fork_owner": {
+          "type": "string",
+          "description": "GitHub username that owns the fork. When set, enables fork & PR workflow: clone/push to fork, create cross-repo PRs against upstream (repo_owner). Leave empty for same-repo mode.",
+          "anyOf": [
+            {"const": ""},
+            {"pattern": "^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$"}
+          ]
+        },
+        "reset_time": {
+          "type": "string",
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$",
+          "description": "Time of day in HH:MM:SS (24-hour) when the scheduled git workspace reset runs. Default: '02:00:00'."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

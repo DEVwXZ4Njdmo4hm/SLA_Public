@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "deploy-config.schema.json",
+  "title": "Deployment Configuration",
+  "description": "Validates deploy.toml.",
+  "type": "object",
+  "required": [
+    "general",
+    "secrets",
+    "deployment",
+    "container",
+    "quadlet",
+    "networking"
+  ],
+  "properties": {
+    "general": {
+      "type": "object",
+      "required": [
+        "deployment_work_dir",
+        "project_config_dir",
+        "agent_config"
+      ],
+      "properties": {
+        "deployment_work_dir": {
+          "type": "string",
+          "minLength": 1
+        },
+        "project_config_dir": {
+          "type": "string",
+          "minLength": 1
+        },
+        "agent_config": {
+          "type": "string",
+          "minLength": 1,
+          "x-deploy-file": true,
+          "x-deploy-file-schema": "agent-config.schema.json"
+        },
+        "constraints_dir": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "secrets": {
+      "type": "object",
+      "required": [
+        "secrets"
+      ],
+      "properties": {
+        "secrets": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "deployment": {
+      "type": "object",
+      "required": [
+        "mode"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "podman"
+          ]
+        }
+      }
+    },
+    "container": {
+      "type": "object",
+      "required": [
+        "base",
+        "maintainer",
+        "workdir"
+      ],
+      "properties": {
+        "base": {
+          "type": "string",
+          "minLength": 1
+        },
+        "maintainer": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workdir": {
+          "type": "string",
+          "pattern": "^/"
+        },
+        "containerfile_args": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "key",
+              "value"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1
+              },
+              "value": {}
+            }
+          }
+        },
+        "extra_commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extra_files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "source",
+              "destination"
+            ],
+            "properties": {
+              "source": {
+                "type": "string",
+                "minLength": 1
+              },
+              "destination": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "quadlet": {
+      "type": "object",
+      "required": [
+        "enable",
+        "run_as",
+        "container_name",
+        "image_name"
+      ],
+      "properties": {
+        "enable": {
+          "type": "boolean"
+        },
+        "run_as": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "container_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "image_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "environment": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "key",
+              "value"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1
+              },
+              "value": {}
+            }
+          }
+        }
+      }
+    },
+    "networking": {
+      "type": "object",
+      "required": [
+        "Network"
+      ],
+      "properties": {
+        "Network": {
+          "type": "string",
+          "minLength": 1
+        },
+        "PortMapping": {
+          "type": "object",
+          "required": [
+            "host_netseg",
+            "host_port",
+            "container_port"
+          ],
+          "properties": {
+            "host_netseg": {
+              "type": "string"
+            },
+            "host_port": {
+              "type": "string"
+            },
+            "container_port": {
+              "type": "string"
+            }
+          }
+        },
+        "AddHost": {
+          "type": "object",
+          "required": [
+            "hostname",
+            "ip"
+          ],
+          "properties": {
+            "hostname": {
+              "type": "string",
+              "minLength": 1
+            },
+            "ip": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "properties": {
+        "db_host_dir": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^/"
+        }
+      }
+    },
+    "git": {
+      "type": "object",
+      "description": "Git workspace is ephemeral (container-only). No host volume needed.",
+      "properties": {}
+    }
+  }
+}

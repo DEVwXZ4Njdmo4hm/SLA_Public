@@ -1,0 +1,136 @@
+# ==========================================================================
+# Capabilities: Git and GitHub operations
+# ==========================================================================
+
+# ── GitHub issue ─────────────────────────────────────────────────────────
+
+[capability.create_github_issue]
+description = "创建 GitHub issue 通知管理员。当分析发现高威胁或严重安全事件时使用此工具，在 issue 中描述威胁详情、涉及的通信对和建议措施。title 应简洁概述威胁，body 提供完整分析。"
+handler     = "create_github_issue"
+allowed_roles = ["Agent", "Administrator", "Owner"]
+enabled     = true
+
+[capability.create_github_issue.params.title]
+type     = "string"
+required = true
+
+[capability.create_github_issue.params.body]
+type     = "string"
+required = true
+
+[capability.create_github_issue.params.labels]
+type     = "string"
+required = false
+
+[capability.create_github_issue.rate_limit]
+max_calls      = 15
+window_seconds = 3600
+
+# ── GitHub pull request ──────────────────────────────────────────────────
+
+[capability.create_github_pr]
+description = "创建 GitHub Pull Request 将 AI 生成的 Suricata 规则分支合并到主分支。在通过 suricata_rule_suggest 写入规则并通过 git_commit_and_push 提交后使用。title 说明日期和规则数量，body 描述规则内容。"
+handler     = "create_github_pr"
+allowed_roles = ["Agent", "Administrator", "Owner"]
+enabled     = true
+requires_approval = true
+
+[capability.create_github_pr.params.title]
+type     = "string"
+required = true
+
+[capability.create_github_pr.params.body]
+type     = "string"
+required = false
+
+[capability.create_github_pr.params.head_branch]
+type     = "string"
+required = true
+
+[capability.create_github_pr.params.base_branch]
+type     = "string"
+required = false
+
+[capability.create_github_pr.rate_limit]
+max_calls      = 5
+window_seconds = 3600
+
+# ── Close open GitHub PRs from fork ─────────────────────────────────────
+
+[capability.close_github_prs]
+description = "关闭从 fork 仓库的默认分支向上游仓库创建的所有开放 Pull Request。在创建新 PR 前调用，避免历史 PR 堆积。无需参数，自动使用配置中的 fork_owner、default_branch 和仓库信息。仅匹配 head 为 fork_owner:default_branch 的 PR，不会误关其他来源的 PR。"
+handler     = "close_github_prs"
+allowed_roles = ["Agent", "Administrator", "Owner"]
+enabled     = true
+
+[capability.close_github_prs.rate_limit]
+max_calls      = 10
+window_seconds = 3600
+
+# ── Git commit and push ─────────────────────────────────────────────────
+
+[capability.git_commit_and_push]
+description = "将本地 Git 工作区的变更暂存、提交并推送到远程分支。在通过 suricata_rule_suggest 写入规则文件后使用此工具提交变更。commit_message 应描述变更内容，branch 为目标分支名。"
+handler     = "git_commit_and_push"
+allowed_roles = ["Agent", "Administrator", "Owner"]
+enabled     = true
+
+[capability.git_commit_and_push.paths.write]
+dirs = ["{repo_dir}"]
+
+[capability.git_commit_and_push.params.commit_message]
+type     = "string"
+required = true
+
+[capability.git_commit_and_push.params.branch]
+type     = "string"
+required = false
+
+[capability.git_commit_and_push.rate_limit]
+max_calls      = 10
+window_seconds = 3600
+
+# ── Git local checkout default ───────────────────────────────────────────
+
+[capability.git_local_checkout_default]
+description = "将本地仓库切换回默认分支并丢弃未提交的更改。仅影响本地工作树，不执行任何远程操作（不 fetch、不 push），可在创建 PR 后安全调用。"
+handler     = "git_local_checkout_default"
+allowed_roles = ["Agent", "Administrator", "Owner"]
+enabled     = true
+
+[capability.git_local_checkout_default.paths.write]
+dirs = ["{repo_dir}"]
+
+[capability.git_local_checkout_default.rate_limit]
+max_calls      = 10
+window_seconds = 3600
+
+# ── Git repository reset ────────────────────────────────────────────────
+
+[capability.git_repo_reset]
+description = "丢弃所有本地修改、从远程同步并（在 fork 模式下）force-push 到 fork。用于定时重置 Git 工作区到干净状态。注意：fork 模式下会关闭基于 fork 默认分支的未合并 PR。"
+handler     = "git_repo_reset"
+allowed_roles = ["Agent", "Administrator", "Owner"]
+enabled     = true
+
+[capability.git_repo_reset.paths.write]
+dirs = ["{repo_dir}"]
+
+[capability.git_repo_reset.rate_limit]
+max_calls      = 5
+window_seconds = 3600
+
+# ── Git clone repository ────────────────────────────────────────────────
+
+[capability.git_clone_repo]
+description = "将配置的远程 Git 仓库克隆到本地工作区。仅在本地工作区不存在时由系统启动流程调用，通常不需要 Agent 手动调用。"
+handler     = "git_clone_repo"
+allowed_roles = ["Agent", "Administrator", "Owner"]
+enabled     = true
+
+[capability.git_clone_repo.paths.write]
+dirs = ["{repo_dir}"]
+
+[capability.git_clone_repo.rate_limit]
+max_calls      = 2
+window_seconds = 3600
