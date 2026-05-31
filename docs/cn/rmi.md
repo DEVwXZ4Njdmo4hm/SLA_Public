@@ -51,7 +51,7 @@ port = 8765
 **响应**：
 ```json
 {
-  "name": "Suricata LLM Agent",
+  "name": "Suricata Log LLM Analyzer",
   "suffix": "(Milestone 1)",
   "version": "0.2.0",
   "author": "Capri XXI (qxwzj@hotmail.com)",

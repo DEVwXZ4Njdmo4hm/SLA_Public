@@ -3,82 +3,94 @@ Suricata LLM Agent (Milestone 1)
 A tool to analyze Suricata logs using a large language model (LLM).
 
 File:         README.md
-Description:  Project overview with core features, dependencies, and quick start guide.
+Description:  Project overview with core features, dependencies, and quick start guide. (English version)
 Author:       Capri XXI (qxwzj@hotmail.com)
 License:      MIT
-Date:         2026-03-22
+Date:         2026-05-31
 -->
 
 # Suricata LLM Agent
 
-基于大语言模型的 Suricata IDS 日志实时分析引擎。从 Elasticsearch 中提取 Suricata 产生的 `eve.json` 日志，利用本地 Ollama 或 OpenAI 兼容后端（OpenAI / Azure OpenAI / vLLM 等）进行自动化威胁评估、安全建议生成，并将分析结果回写至 Elasticsearch。
+[中文](README.cn.md) | **English**
 
-## 核心特性
+Suricata LLM Agent is a real-time Suricata IDS log analysis engine powered by
+large language models. It reads Suricata `eve.json` events from Elasticsearch,
+uses a local Ollama backend or an OpenAI-compatible backend (OpenAI, Azure
+OpenAI, vLLM, and similar services) to generate automated threat assessments
+and security recommendations, and writes the analysis results back to
+Elasticsearch.
 
-- **实时流量分析** — 批量拉取未处理日志，并发调用 LLM 生成威胁评估和安全建议
-- **多模式记忆** — 支持通信对、全局、协议-通信对与滚动压缩记忆，用于实时关联分析
-- **多级日报生成** — 支持层级、通信对级和扁平日报分析模式，输出 HTML 日报并邮件发送
-- **混合 LLM 后端** — 同一实例可按模型路由到 Ollama 或 OpenAI 兼容 API，并支持 vLLM 指标采集和请求限速
-- **自适应性能调优** — 基于 EMA 的压力-质量模型，结合 LLM 吞吐量、本地 GPU 约束和可选成本预算调整模型参数
-- **远程管理接口 (RMI)** — FastAPI REST API，支持运行时状态查询和手动触发日报
-- **邮件队列** — 指数退避重试 + 持久化暂存 + 死信归档
-- **模板化部署** — 基于 TOML 配置 + JSON Schema 预检，自动生成 Containerfile 和 Quadlet 服务文件
-- **可配置 Prompt** — LLM 提示词完全外置于 TOML 配置，支持实时分析和日报的独立 prompt 模板
-- **认证与授权 (U-A-P)** — 基于角色的用户-角色-权限模型（Owner / Administrator / Agent / Watcher），JWT + API Key 双轨认证，SSE 日志流
-- **执行器子系统** — 声明式能力注册（TOML）、策略引擎（角色检查 + 参数校验 + 速率限制）、PathGuard 文件系统沙盒、SQLite 审计日志
-- **Agent 模式** — 支持 LLM tool calling 的 ReAct 循环编排器，按后端检测模型能力并回退至 Pipeline 模式
-- **Git / GitHub 集成** — 通过执行器创建 Issue、提交 commit、按策略发起 PR；支持 Suricata 规则自动生成与验证
-- **凭据集中管理** — 用户、API Key、ES 密码、GitHub Token、LLM API Key、邮件认证凭据与 OAuth2 缓存统一存储于 `credentials.db`
-- **微调样本采集** — 可选记录实时分析的 system/user/response 三元组，经 RMI 标注后导出 JSONL
+## Core Features
 
-## 依赖
+- **Real-time traffic analysis** - Batch-fetches unprocessed logs and calls LLMs concurrently to generate threat assessments and security recommendations.
+- **Multiple memory modes** - Supports communication-pair, global, protocol-pair, and rolling-compaction memory for real-time correlation analysis.
+- **Multi-level daily reports** - Supports hierarchical, communication-pair-only, and flat daily report modes, with HTML output and email delivery.
+- **Hybrid LLM backends** - Routes models within the same instance to Ollama or OpenAI-compatible APIs, with vLLM metrics collection and request rate limiting.
+- **Adaptive performance tuning** - Uses an EMA-based pressure-quality model to adjust model parameters based on LLM throughput, local GPU constraints, and optional cost budgets.
+- **Remote Management Interface (RMI)** - Provides a FastAPI REST API for runtime status queries and manual daily report generation.
+- **Mail queue** - Includes exponential backoff retries, persistent spooling, and dead-letter archiving.
+- **Template-driven deployment** - Uses TOML configuration and JSON Schema preflight checks to generate Containerfile and Quadlet service files.
+- **Configurable prompts** - Keeps LLM prompts fully externalized in TOML, with separate templates for real-time analysis and daily reports.
+- **Authentication and authorization (U-A-P)** - Provides a role-based User-Actor-Permission model (Owner / Administrator / Agent / Watcher), JWT and API Key authentication, and SSE log streaming.
+- **Executor subsystem** - Provides declarative TOML capability registration, a policy engine (role checks, parameter validation, rate limits), a PathGuard filesystem sandbox, and SQLite audit logs.
+- **Agent mode** - Adds a ReAct orchestrator for LLM tool calling, with backend capability detection and fallback to Pipeline mode.
+- **Git / GitHub integration** - Creates issues, commits changes, and opens PRs through the executor; also supports automatic Suricata rule generation and validation.
+- **Centralized credential management** - Stores users, API keys, ES passwords, GitHub tokens, LLM API keys, mail credentials, and OAuth2 caches in `credentials.db`.
+- **Fine-tuning sample collection** - Optionally records real-time analysis system/user/response triples and exports JSONL after RMI-based labeling.
 
-- Python ≥ 3.12
-- Elasticsearch（用于日志存储和查询）
-- [Ollama](https://ollama.com/)（选择本地后端时使用）
-- OpenAI 兼容 API 服务（选择远程后端或 vLLM 时使用）
-- Podman + systemd（用于容器化部署）
+## Requirements
 
-## 快速开始
+- Python >= 3.12
+- Elasticsearch for log storage and querying
+- [Ollama](https://ollama.com/) when using a local backend
+- An OpenAI-compatible API service when using a remote backend or vLLM
+- Podman + systemd for containerized deployment
 
-### 1. 安装
+## Quick Start
+
+### 1. Install
 
 ```bash
-# 克隆项目
-git clone https://github.com/DEVwXZ4Njdmo4hm/SLA_Public.git
-cd SLA_Public
+# Clone the project
+git clone <repo-url>
+cd suricata_llm_agent_pkg
 
-# 安装依赖（推荐使用 uv，会创建/更新项目 .venv）
+# Install dependencies (uv is recommended and creates/updates the project .venv)
 uv sync
 
-# 或使用 pip + 显式虚拟环境
+# Or use pip with an explicit virtual environment
 python -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-### 2. 配置
+### 2. Configure
 
-运行前需要将配置模板复制到项目根目录并填入真实值：
+Before running the service, copy the configuration templates to the project root
+and fill in real values:
 
 ```bash
 cp config_templates/*.toml ./
 ```
 
-然后编辑各配置文件，替换占位符（`CHANGE_ME`、`YOUR_CLIENT_ID` 等）为你的实际值。根目录下的配置文件已被 `.gitignore` 忽略，不会被提交。
+Then edit the configuration files and replace placeholders such as `CHANGE_ME`
+and `YOUR_CLIENT_ID` with your real values. Root-level configuration files are
+ignored by `.gitignore` and will not be committed.
 
-核心配置文件为 `suricata-llm-agent.toml`，它定义了 Elasticsearch 连接、事件过滤规则、LLM 参数、日报设置、邮件配置等所有运行时选项。
+The main configuration file is `suricata-llm-agent.toml`. It defines
+Elasticsearch connectivity, event filters, LLM parameters, daily report
+settings, mail configuration, and other runtime options.
 
 ```toml
-# 最基本的配置项
+# Minimal core settings
 [elasticsearch]
 host = "https://your-es-host:9200"
-user = "your-es-user"       # 容器部署可由 credentials.db 提供
+user = "your-es-user"       # Container deployment can load this from credentials.db
 password = "your-es-password"
 index_pattern = "suricata-eve-*"
 
 [llm.backend]
-type = "ollama"       # 或 "openai"
-# base_url = "https://api.example.com/v1"   # openai 后端必填
+type = "ollama"       # Or "openai"
+# base_url = "https://api.example.com/v1"   # Required for the openai backend
 
 [ollama]
 base_url = "http://localhost:11434"
@@ -87,91 +99,94 @@ base_url = "http://localhost:11434"
 model_profiles_file = "ModelProfiles.toml"
 ```
 
-相关配置文件一览：
+Related configuration files:
 
-| 文件 | 用途 |
-|------|------|
-| `suricata-llm-agent.toml` | 主配置文件 |
-| `llm_prompt.toml` | LLM 提示词模板 |
-| `ModelProfiles.toml` | 模型性能基准档案 |
-| `daily_report_llm_conf.toml` | 日报专用 LLM 参数 |
-| `suspicious_ja3.toml` | 可疑 JA3 客户端指纹列表 |
-| `suspicious_ja3s.toml` | 可疑 JA3S 服务端指纹列表 |
-| `secrets.toml` | 部署阶段写入 `credentials.db` 的服务凭据 |
-| `deploy.toml` | 部署系统配置 |
+| File | Purpose |
+|------|---------|
+| `suricata-llm-agent.toml` | Main configuration file |
+| `llm_prompt.toml` | LLM prompt templates |
+| `ModelProfiles.toml` | Model performance profiles |
+| `daily_report_llm_conf.toml` | Dedicated daily-report LLM parameters |
+| `suspicious_ja3.toml` | Suspicious JA3 client fingerprint list |
+| `suspicious_ja3s.toml` | Suspicious JA3S server fingerprint list |
+| `secrets.toml` | Service credentials written to `credentials.db` during deployment |
+| `deploy.toml` | Deployment system configuration |
 
-详见 [docs/configuration.md](docs/configuration.md)。
+See [docs/en/configuration.md](docs/en/configuration.md).
 
-### 3. 运行
+### 3. Run
 
 ```bash
-# 直接运行
+# Run directly
 .venv/bin/python -m src.main
 
-# 或在容器中部署（推荐）
+# Or deploy in a container (recommended)
 .venv/bin/python deploy.py
 ```
 
-### 4. 容器化部署
+### 4. Containerized Deployment
 
-部署系统会自动完成：配置预检 → 获取 sudo → 准备构建上下文 → 生成/更新 `credentials.db` → OAuth2 令牌配置 → 生成 Containerfile 与 Quadlet → 构建镜像 → 安装并重启 systemd 服务。
+The deployment system performs configuration preflight checks, obtains sudo,
+prepares the build context, creates or updates `credentials.db`, provisions
+OAuth2 tokens, renders Containerfile and Quadlet files, builds the image, and
+installs/restarts the systemd service.
 
 ```bash
 .venv/bin/python deploy.py
 ```
 
-详见 [docs/deployment.md](docs/deployment.md)。
+See [docs/en/deployment.md](docs/en/deployment.md).
 
-## 项目结构
+## Project Layout
 
+```text
+suricata_llm_agent_pkg/
+├── src/                         # SLA runtime source code
+│   ├── main.py                  # Startup orchestration and main loop
+│   ├── config.py                # Configuration loading, credentials, model profiles
+│   ├── processor.py             # Real-time batch processing and Agent/Pipeline routing
+│   ├── llm_handler.py           # LLM calls, memory, JSON parsing, Agent identity
+│   ├── orchestrator.py          # Agent-mode ReAct loop
+│   ├── daily_report.py          # Daily reports, rule generation, HTML output
+│   ├── rmi.py                   # FastAPI remote management interface
+│   ├── es_client.py             # Elasticsearch reads and writes
+│   ├── pre_process.py           # ES query construction and event filtering
+│   ├── perf_cacl.py             # Adaptive performance tuning
+│   ├── auth/                    # U-A-P users, roles, JWT, API keys, SSE logs
+│   ├── executor/                # Capability registry, policy, PathGuard, audit, handlers
+│   ├── backends/                # Ollama / OpenAI-compatible backends and rate limiting
+│   └── mailer/                  # Mail sending, OAuth2, retry queue, recipient resolution
+├── configs/                     # Capabilities, schemas, base images, package managers, templates
+│   ├── capabilities/            # Executor capability declarations
+│   ├── constraints/             # JSON Schema preflight rules
+│   ├── container_base/          # Container base image definitions
+│   ├── package_manager/         # Package-manager command definitions
+│   ├── mail_providers/          # Mail provider configuration
+│   └── templates/               # Containerfile and Quadlet templates
+├── deploy/                      # Modular deployment implementation
+├── docs/                        # Project documentation
+├── tests/                       # Unit tests
+├── deploy.py                    # Deployment entry point
+└── *.toml                       # Main, model, prompt, deployment, and secret configs
 ```
-SLA_Public/
-├── src/                         # SLA 运行期源代码
-│   ├── main.py                  # 启动编排与主循环
-│   ├── config.py                # 配置加载、凭据加载、模型档案
-│   ├── processor.py             # 实时批处理、Agent/Pipeline 分流
-│   ├── llm_handler.py           # LLM 调用、记忆、JSON 解析、Agent identity
-│   ├── orchestrator.py          # Agent 模式 ReAct 循环
-│   ├── daily_report.py          # 日报、规则生成、HTML 输出
-│   ├── rmi.py                   # FastAPI 远程管理接口
-│   ├── es_client.py             # Elasticsearch 读写
-│   ├── pre_process.py           # ES 查询构建与事件过滤
-│   ├── perf_cacl.py             # 自适应性能调优
-│   ├── auth/                    # U-A-P 用户、角色、JWT、API Key、SSE 日志
-│   ├── executor/                # 能力注册、策略、PathGuard、审计、handler
-│   ├── backends/                # Ollama / OpenAI 兼容后端与限速
-│   └── mailer/                  # 邮件发送、OAuth2、重试队列、收件人解析
-├── configs/                     # 能力、Schema、镜像基础、包管理器、模板配置
-│   ├── capabilities/            # Executor capability 声明
-│   ├── constraints/             # JSON Schema 预检规则
-│   ├── container_base/          # 容器基础镜像定义
-│   ├── package_manager/         # 包管理器命令定义
-│   ├── mail_providers/          # 邮件提供商配置
-│   └── templates/               # Containerfile 与 Quadlet 模板
-├── deploy/                      # 模块化部署实现
-├── docs/                        # 项目文档
-├── tests/                       # 单元测试
-├── deploy.py                    # 部署脚本入口
-└── *.toml                       # 主配置、模型档案、Prompt、部署与密钥配置
-```
 
-## 文档
+## Documentation
 
-| 文档 | 内容 |
-|------|------|
-| [架构概览](docs/architecture.md) | 系统架构、模块关系、线程模型、数据流 |
-| [配置参考](docs/configuration.md) | 所有配置文件的详细说明 |
-| [部署指南](docs/deployment.md) | 部署系统的使用、模板引擎、预检机制 |
-| [认证与授权](docs/auth.md) | U-A-P 角色模型、JWT/API Key 认证、端点保护 |
-| [执行器子系统](docs/executor.md) | 能力声明、策略引擎、PathGuard、审计日志 |
-| [Agent 模式](docs/agent-mode.md) | ReAct 循环、tool calling、模式检测与回退 |
-| [Git 集成](docs/git-integration.md) | Issue/PR 自动创建、规则生成、仓库管理 |
-| [性能调优](docs/performance-tuning.md) | 自适应性能算法、模型档案、压力-质量模型 |
-| [远程管理接口](docs/rmi.md) | RMI REST API 端点和用法 |
-| [日报系统](docs/daily-report.md) | 多级日报生成流程和配置 |
-| [邮件系统](docs/mail-system.md) | 邮件发送、队列重试、OAuth2 认证 |
-| [LLM Prompt 配置](docs/llm-prompt-config.md) | Prompt 模板结构和自定义 |
+| Document | Content |
+|----------|---------|
+| [Architecture Overview](docs/en/architecture.md) | System architecture, module relationships, thread model, and data flow |
+| [Configuration Reference](docs/en/configuration.md) | Detailed reference for all configuration files |
+| [Deployment Guide](docs/en/deployment.md) | Deployment workflow, template engine, and preflight checks |
+| [Authentication and Authorization](docs/en/auth.md) | U-A-P role model, JWT/API Key authentication, and endpoint protection |
+| [Executor Subsystem](docs/en/executor.md) | Capability declarations, policy engine, PathGuard, and audit logs |
+| [Agent Mode](docs/en/agent-mode.md) | ReAct loop, tool calling, mode detection, and fallback |
+| [Git Integration](docs/en/git-integration.md) | Automatic issue/PR creation, rule generation, and repository management |
+| [Performance Tuning](docs/en/performance-tuning.md) | Adaptive performance algorithm, model profiles, and pressure-quality model |
+| [Remote Management Interface](docs/en/rmi.md) | RMI REST API endpoints and usage |
+| [Daily Report System](docs/en/daily-report.md) | Multi-level daily report generation flow and configuration |
+| [Mail System](docs/en/mail-system.md) | Mail sending, retry queue, and OAuth2 authentication |
+| [LLM Prompt Configuration](docs/en/llm-prompt-config.md) | Prompt template structure and customization |
 
-## 许可证
+## License
 
-MIT License — Capri XXI (qxwzj@hotmail.com)
+MIT License - Capri XXI (qxwzj@hotmail.com)

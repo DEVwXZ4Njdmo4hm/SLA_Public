@@ -105,7 +105,7 @@ Step 8: 安装 Quadlet 服务 + 重启 systemd
 
 | 选项 | 说明 |
 |------|------|
-| `base` | 基础镜像标识（如 `rhel10.0`、`rhel10.1`、`rhel10.2`、`debian13.1`、`debian13.2`、`debian13.3`、`debian13.4`），自动加载对应的预定义文件；当前配置模板使用 `rhel10.1` |
+| `base` | 基础镜像标识（如 `rhel10.1`、`rhel10.2`、`debian13.3`、`debian13.4`），自动加载对应的预定义文件；当前配置模板使用 `rhel10.1` |
 | `maintainer` | 镜像维护者信息 |
 | `workdir` | 容器内工作目录（如 `/app`） |
 | `extra_files` | 需额外烘焙的文件列表 |
@@ -254,11 +254,8 @@ WantedBy=multi-user.target default.target
 
 | 文件 | 镜像 | 包管理器 |
 |------|------|---------|
-| `rhel10.0.toml` | `registry.access.redhat.com/ubi10/ubi:10.0` | dnf |
 | `rhel10.1.toml` | `registry.access.redhat.com/ubi10/ubi:10.1` | dnf |
 | `rhel10.2.toml` | `registry.access.redhat.com/ubi10/ubi:10.2` | dnf |
-| `debian13.1.toml` | `docker://debian:13.1` | apt |
-| `debian13.2.toml` | `docker://debian:13.2` | apt |
 | `debian13.3.toml` | `docker://debian:13.3` | apt |
 | `debian13.4.toml` | `docker://debian:13.4` | apt |
 
