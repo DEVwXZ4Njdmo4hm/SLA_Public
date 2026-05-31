@@ -23,6 +23,7 @@ secrets.toml
 
 # ReadMe and License files
 !README.md
+!README.cn.md
 !LICENSE
 
 # Python project files
