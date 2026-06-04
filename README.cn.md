@@ -14,14 +14,14 @@ Date:         2026-03-22
 **中文** | [English](README.md)
 
 
-基于大语言模型的 Suricata IDS 日志实时分析引擎。从 Elasticsearch 中提取 Suricata 产生的 `eve.json` 日志，利用本地 Ollama 或 OpenAI 兼容后端（OpenAI / Azure OpenAI / vLLM 等）进行自动化威胁评估、安全建议生成，并将分析结果回写至 Elasticsearch。
+基于大语言模型的 Suricata IDS 日志实时分析引擎。从 Elasticsearch 中提取 Suricata 产生的 `eve.json` 日志，利用本地 Ollama、通用 OpenAI 兼容后端（OpenAI / Azure OpenAI / vLLM 等）或原生 DeepSeek API 后端进行自动化威胁评估、安全建议生成，并将分析结果回写至 Elasticsearch。
 
 ## 核心特性
 
 - **实时流量分析** — 批量拉取未处理日志，并发调用 LLM 生成威胁评估和安全建议
 - **多模式记忆** — 支持通信对、全局、协议-通信对与滚动压缩记忆，用于实时关联分析
 - **多级日报生成** — 支持层级、通信对级和扁平日报分析模式，输出 HTML 日报并邮件发送
-- **混合 LLM 后端** — 同一实例可按模型路由到 Ollama 或 OpenAI 兼容 API，并支持 vLLM 指标采集和请求限速
+- **混合 LLM 后端** — 同一实例可按模型路由到 Ollama、OpenAI 兼容 API 或原生 DeepSeek API 后端，并支持 vLLM 指标采集和请求限速
 - **自适应性能调优** — 基于 EMA 的压力-质量模型，结合 LLM 吞吐量、本地 GPU 约束和可选成本预算调整模型参数
 - **远程管理接口 (RMI)** — FastAPI REST API，支持运行时状态查询和手动触发日报
 - **邮件队列** — 指数退避重试 + 持久化暂存 + 死信归档
@@ -39,7 +39,7 @@ Date:         2026-03-22
 - Python ≥ 3.12
 - Elasticsearch（用于日志存储和查询）
 - [Ollama](https://ollama.com/)（选择本地后端时使用）
-- OpenAI 兼容 API 服务（选择远程后端或 vLLM 时使用）
+- OpenAI 兼容 API 服务或 DeepSeek API Key（选择远程后端时使用）
 - Podman + systemd（用于容器化部署）
 
 ## 快速开始
@@ -80,8 +80,8 @@ password = "your-es-password"
 index_pattern = "suricata-eve-*"
 
 [llm.backend]
-type = "ollama"       # 或 "openai"
-# base_url = "https://api.example.com/v1"   # openai 后端必填
+type = "ollama"       # 或 "openai" / "deepseek"
+# base_url = "https://api.example.com"      # openai 后端必填；deepseek 可省略
 
 [ollama]
 base_url = "http://localhost:11434"
@@ -142,7 +142,7 @@ suricata_llm_agent_pkg/
 │   ├── perf_cacl.py             # 自适应性能调优
 │   ├── auth/                    # U-A-P 用户、角色、JWT、API Key、SSE 日志
 │   ├── executor/                # 能力注册、策略、PathGuard、审计、handler
-│   ├── backends/                # Ollama / OpenAI 兼容后端与限速
+│   ├── backends/                # Ollama / OpenAI 兼容 / DeepSeek 后端与限速
 │   └── mailer/                  # 邮件发送、OAuth2、重试队列、收件人解析
 ├── configs/                     # 能力、Schema、镜像基础、包管理器、模板配置
 │   ├── capabilities/            # Executor capability 声明

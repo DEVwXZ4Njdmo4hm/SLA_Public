@@ -15,9 +15,10 @@ License:      MIT
 Suricata LLM Agent includes an EMA-based adaptive performance tuning system. It
 adjusts LLM call parameters in real time based on runtime throughput, processing
 pressure, local GPU constraints, and optional cost budgets, seeking a balance
-between analysis quality and processing speed. The system applies to both local
-Ollama backends and OpenAI-compatible backends. When a remote backend has no
-hardware information, tuning falls back to token throughput and cost signals.
+between analysis quality and processing speed. The system applies to local
+Ollama backends, OpenAI-compatible backends, and the native DeepSeek backend.
+When a remote backend has no hardware information, tuning falls back to token
+throughput and cost signals.
 
 The core implementation lives in `src/perf_cacl.py`.
 
@@ -120,8 +121,9 @@ After each processed batch, `record_token_stats()` records unified
 `LLMMetrics` returned by the backend:
 
 - **completion_tokens_per_sec**: actual completion token generation speed with
-  EMA smoothing. Ollama uses backend-reported generation time; OpenAI-compatible
-  backends usually fall back to request wall-clock time.
+  EMA smoothing. Ollama uses backend-reported generation time; remote backends
+  such as OpenAI-compatible APIs and DeepSeek usually fall back to request
+  wall-clock time.
 - **tokens_per_log**: average completion token cost per log, with EMA smoothing.
 - **prompt_tokens / completion_tokens**: recorded into `TokenStatsWindow` for
   `/stats` and ES statistics indexes.
@@ -199,6 +201,13 @@ backend_base_url = "https://api.openai.com"
 # Leave backend_auth_token empty to use the global API Key
 baseline_tps = 80.0
 # ...
+
+# Native DeepSeek model for daily reports / escalation
+[model."deepseek-v4-flash"]
+backend_type = "deepseek"
+# Leave backend_base_url empty to use https://api.deepseek.com
+baseline_tps = 80.0
+# ...
 ```
 
 The system caches per-model routed backend instances by `(backend_type, base_url,
@@ -220,7 +229,7 @@ A typical three-backend pattern:
 ```text
 Real-time analysis -> local Ollama (low latency, low cost)
 Escalation         -> remote OpenAI API (high accuracy)
-Daily report       -> remote OpenAI API (large context)
+Daily report       -> native DeepSeek API (large context)
 ```
 
 Escalation parameters (`max_tokens`, `context_length`, `temperature`, and

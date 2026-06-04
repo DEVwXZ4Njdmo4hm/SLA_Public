@@ -36,14 +36,15 @@ security events.
                                    v
                     +------------------------------+
                     | LLM backends                 |
-                    | Ollama / OpenAI-compatible   |
+                    | Ollama / OpenAI / DeepSeek   |
                     | per-model routing + limiter  |
                     +------------------------------+
 ```
 
 The system supports hybrid backends. Different models can use different
-backends, such as local Ollama or a remote OpenAI-compatible API. Routing is
-based on each model's `backend_type` in `ModelProfiles.toml`.
+backends, such as local Ollama, a remote OpenAI-compatible API, or the native
+DeepSeek API backend. Routing is based on each model's `backend_type` in
+`ModelProfiles.toml`.
 
 ## Module Dependencies
 
@@ -67,7 +68,7 @@ main.py                              # Entry point, startup orchestration, main 
 │   ├── global_memory.py             # Global FIFO / rolling-compaction memory
 │   ├── comm_proto_pair_memory.py    # Protocol-communication-pair bucketed memory
 │   ├── llm_backend.py               # Backend protocol and token metrics
-│   └── backends/                    # Ollama / OpenAI-compatible / rate limiting
+│   └── backends/                    # Ollama / OpenAI-compatible / DeepSeek / rate limiting
 ├── orchestrator.py                  # Agent-mode ReAct loop
 │   └── tool_schema.py               # Capability -> function tool schema
 ├── processor.py                     # Real-time batch processing

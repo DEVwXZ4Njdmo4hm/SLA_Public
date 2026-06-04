@@ -22,7 +22,7 @@ threshold logic.
 | Dimension | Pipeline mode | Agent mode |
 |-----------|---------------|------------|
 | Decision model | Hard-coded thresholds, such as threat level >= high -> create issue | LLM decides whether to call tools |
-| LLM API | Chat messages without tools, compatible with Ollama/OpenAI backends | Chat messages + tool calling |
+| LLM API | Chat messages without tools, compatible with Ollama/OpenAI/DeepSeek backends | Chat messages + tool calling |
 | Operation trigger | `_maybe_create_issue()` in code | LLM returns `tool_calls` -> Orchestrator dispatches |
 | Applicable models | All models | Only models that support tool calling |
 | Fallback | N/A | Conditional fallback to Pipeline mode |
@@ -40,6 +40,8 @@ layer:
    `model_info.tokenizer.chat_template` and the top-level `template` field.
 3. The OpenAI-compatible backend reports tool-calling support by default; actual
    availability depends on the upstream model and server.
+4. The native DeepSeek backend reports tool-calling support by default; actual
+   availability depends on the selected DeepSeek model and API behavior.
 
 Backend instances for the same model are cached by `(backend_type, base_url,
 auth_token)`. Explicit overrides are useful when the model capability is known
@@ -153,6 +155,7 @@ to notify administrators that it is running in Pipeline mode.
 |------|-------------|
 | `src/backends/ollama.py` | Ollama `/api/show` tool-use detection |
 | `src/backends/openai_compat.py` | OpenAI-compatible backend and tool-calling support declaration |
+| `src/backends/deepseek.py` | Native DeepSeek `/chat/completions` backend and tool-calling support declaration |
 | `src/tool_schema.py` | Capability -> function tool schema translator |
 | `src/orchestrator.py` | ReAct loop Orchestrator |
 | `src/llm_handler.py` | `call_llm_chat()`, `supports_tool_use` property |

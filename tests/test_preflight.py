@@ -467,6 +467,15 @@ class TestAgentConfigSchemaValidation:
         }
         jsonschema.validate(instance=data, schema=schema)
 
+    def test_deepseek_backend_type_accepted(self, schema, jsonschema):
+        """Native DeepSeek backend type is valid."""
+        data = self._minimal_data()
+        data["llm"]["backend"] = {
+            "type": "deepseek",
+            "auth_token": "ds-test",
+        }
+        jsonschema.validate(instance=data, schema=schema)
+
     def test_backend_vllm_metrics_invalid_url_rejected(self, schema, jsonschema):
         """prometheus_url must match the URL pattern."""
         data = self._minimal_data()

@@ -167,9 +167,9 @@ class TestLLMBackendConfigValidation:
         }
         if "type" in llm_backend:
             result["LLM_BACKEND_TYPE"] = str(llm_backend["type"]).lower()
-        if result["LLM_BACKEND_TYPE"] not in ("ollama", "openai"):
+        if result["LLM_BACKEND_TYPE"] not in ("ollama", "openai", "deepseek"):
             raise ValueError(
-                f"llm.backend.type must be 'ollama' or 'openai', "
+                f"llm.backend.type must be 'ollama', 'openai', or 'deepseek', "
                 f"got: {result['LLM_BACKEND_TYPE']!r}"
             )
         if "base_url" in llm_backend:
@@ -190,12 +190,16 @@ class TestLLMBackendConfigValidation:
         assert r["LLM_BACKEND_TYPE"] == "openai"
         assert r["LLM_BACKEND_BASE_URL"] == "http://vllm:8000"
 
+    def test_valid_deepseek(self):
+        r = self._parse_backend({"type": "deepseek"})
+        assert r["LLM_BACKEND_TYPE"] == "deepseek"
+
     def test_case_insensitive(self):
-        r = self._parse_backend({"type": "OpenAI"})
-        assert r["LLM_BACKEND_TYPE"] == "openai"
+        r = self._parse_backend({"type": "DeepSeek"})
+        assert r["LLM_BACKEND_TYPE"] == "deepseek"
 
     def test_invalid_type_raises(self):
-        with pytest.raises(ValueError, match="must be 'ollama' or 'openai'"):
+        with pytest.raises(ValueError, match="must be 'ollama', 'openai', or 'deepseek'"):
             self._parse_backend({"type": "anthropic"})
 
     def test_empty_dict_defaults_to_ollama(self):
@@ -379,6 +383,16 @@ class TestModelProfileDataclass:
         assert mp.backend_base_url == "https://api.openai.com"
         assert mp.backend_auth_token == "sk-test"
 
+    def test_deepseek_backend_type_set_explicitly(self):
+        from tests.conftest import ModelProfile
+        mp = ModelProfile(
+            name="deepseek-v4-flash",
+            backend_type="deepseek",
+            backend_auth_token="ds-test",
+        )
+        assert mp.backend_type == "deepseek"
+        assert mp.backend_auth_token == "ds-test"
+
 
 class TestModelProfileTomlParsing:
     """Verify that backend_type / backend_base_url / backend_auth_token
@@ -460,6 +474,34 @@ top_k = 40
 
         # backend_type absent → load_model_profiles will default to global LLM_BACKEND_TYPE
         assert "backend_type" not in models["no-backend"]
+
+    def test_deepseek_backend_fields_parsed_from_toml(self, tmp_path):
+        toml_content = b"""
+total_vram_mb = 8192
+
+[model."deepseek-v4-flash"]
+baseline_tps = 80.0
+quality_score = 0.8
+vram_calibration_context = 0
+vram_calibration_mb = 0
+context_length = { min = 8192, max = 1048576 }
+num_predict = { min = 512, max = 8192 }
+concurrency = { min = 1, max = 8 }
+batch_size = { min = 10, max = 50 }
+poll_interval = { min = 5, max = 30 }
+temperature = 0.2
+top_p = 0.9
+top_k = 40
+backend_type = "deepseek"
+backend_auth_token = "ds-test-key"
+"""
+        toml_file = tmp_path / "ModelProfiles.toml"
+        toml_file.write_bytes(toml_content)
+
+        data = _load_toml(str(toml_file))
+        profile = data["model"]["deepseek-v4-flash"]
+        assert profile["backend_type"] == "deepseek"
+        assert profile["backend_auth_token"] == "ds-test-key"
 
 
 class TestDisableAgentModeConfig:

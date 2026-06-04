@@ -19,7 +19,7 @@ License:      MIT
 | 维度 | Pipeline 模式 | Agent 模式 |
 |------|-------------|-----------|
 | 决策方式 | 硬编码阈值（如威胁等级≥高 → 创建 issue） | LLM 自主决定是否调用工具 |
-| LLM API | Chat 消息（不传 tools，兼容 Ollama/OpenAI 后端） | Chat 消息 + tool calling |
+| LLM API | Chat 消息（不传 tools，兼容 Ollama/OpenAI/DeepSeek 后端） | Chat 消息 + tool calling |
 | 操作触发 | 代码中的 `_maybe_create_issue()` | LLM 返回 `tool_calls` → Orchestrator 分发 |
 | 适用模型 | 所有模型 | 仅支持 tool calling 的模型 |
 | 回退 | N/A | 有条件回退到 Pipeline 模式 |
@@ -31,6 +31,7 @@ License:      MIT
 1. 若 `ModelProfiles.toml` 中设置了 `supports_tool_use`，优先使用该显式覆盖。
 2. Ollama 后端调用 `/api/show`，检查 `capabilities` 列表是否包含 `"tools"`，并检查 `model_info.tokenizer.chat_template` 与顶层 `template` 字段中的 tool 相关标记。
 3. OpenAI 兼容后端默认返回支持 tool calling，由具体上游模型和服务端决定实际可用性。
+4. 原生 DeepSeek 后端默认返回支持 tool calling，由所选 DeepSeek 模型和 API 行为决定实际可用性。
 
 同一模型的后端实例按 `(backend_type, base_url, auth_token)` 缓存；显式覆盖适合已知模型能力但后端元数据不完整的情况。
 
@@ -127,6 +128,7 @@ Agent 模式在 orchestrator 异常或未产生分析文本且未执行工具调
 |------|------|
 | `src/backends/ollama.py` | Ollama `/api/show` tool-use 检测 |
 | `src/backends/openai_compat.py` | OpenAI 兼容后端与 tool calling 支持声明 |
+| `src/backends/deepseek.py` | 原生 DeepSeek `/chat/completions` 后端与 tool calling 支持声明 |
 | `src/tool_schema.py` | Capability → function tool schema 翻译器 |
 | `src/orchestrator.py` | ReAct 循环 Orchestrator |
 | `src/llm_handler.py` | `call_llm_chat()`, `supports_tool_use` 属性 |

@@ -39,6 +39,15 @@ def create_backend_for_model(profile) -> LLMBackend:
     elif bt == "openai":
         effective_url = base_url or getattr(config, "LLM_BACKEND_BASE_URL", "")
         cache_key = f"openai|{effective_url}|{auth}"
+    elif bt == "deepseek":
+        from .deepseek import DEFAULT_DEEPSEEK_BASE_URL
+        global_url = (
+            getattr(config, "LLM_BACKEND_BASE_URL", "")
+            if getattr(config, "LLM_BACKEND_TYPE", "") == "deepseek"
+            else ""
+        )
+        effective_url = base_url or global_url or DEFAULT_DEEPSEEK_BASE_URL
+        cache_key = f"deepseek|{effective_url}|{auth}"
     else:
         raise ValueError(f"Unknown backend type in profile '{profile.name}': {bt!r}")
 
@@ -78,13 +87,21 @@ def create_backend_for_model(profile) -> LLMBackend:
                 auth_token=auth,
                 rate_limiter=limiter,
             )
-        else:
+        elif bt == "openai":
             from .openai_compat import OpenAICompatBackend
             backend = OpenAICompatBackend(
                 base_url=effective_url,
                 api_key=auth,
                 timeout=config.OLLAMA_TIMEOUT,
                 vllm_prometheus_url=getattr(config, "LLM_BACKEND_VLLM_PROMETHEUS_URL", ""),
+                rate_limiter=limiter,
+            )
+        else:
+            from .deepseek import DeepSeekBackend
+            backend = DeepSeekBackend(
+                base_url=effective_url,
+                api_key=auth,
+                timeout=config.OLLAMA_TIMEOUT,
                 rate_limiter=limiter,
             )
 
@@ -117,6 +134,13 @@ def create_backend() -> LLMBackend:
             api_key=getattr(config, "LLM_BACKEND_AUTH_TOKEN", ""),
             timeout=config.OLLAMA_TIMEOUT,
             vllm_prometheus_url=getattr(config, "LLM_BACKEND_VLLM_PROMETHEUS_URL", ""),
+        )
+    elif backend_type == "deepseek":
+        from .deepseek import DEFAULT_DEEPSEEK_BASE_URL, DeepSeekBackend
+        return DeepSeekBackend(
+            base_url=getattr(config, "LLM_BACKEND_BASE_URL", "") or DEFAULT_DEEPSEEK_BASE_URL,
+            api_key=getattr(config, "LLM_BACKEND_AUTH_TOKEN", ""),
+            timeout=config.OLLAMA_TIMEOUT,
         )
     else:
         raise ValueError(f"Unknown LLM backend type: {backend_type!r}")

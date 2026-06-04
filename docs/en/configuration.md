@@ -132,8 +132,8 @@ enabled, `memory_max_pairs` must be at least 3.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `type` | string | `"ollama"` | Backend type: `"ollama"` for local inference, or `"openai"` for OpenAI-compatible APIs including OpenAI, Azure OpenAI, and vLLM |
-| `base_url` | string | - | Global OpenAI-compatible API URL. When the global backend is `ollama`, `[ollama].base_url` is used; individual models can still override their backend URL through `backend_base_url` in `ModelProfiles.toml` |
+| `type` | string | `"ollama"` | Backend type: `"ollama"` for local inference, `"openai"` for generic OpenAI-compatible APIs including OpenAI, Azure OpenAI, and vLLM, or `"deepseek"` for the native DeepSeek API backend |
+| `base_url` | string | - | Global remote API URL. `openai` requires this value. `deepseek` defaults to `https://api.deepseek.com` when omitted. When the global backend is `ollama`, `[ollama].base_url` is used; individual models can still override their backend URL through `backend_base_url` in `ModelProfiles.toml` |
 | `auth_token` | string | - | Bearer token / API Key. Prefer `credentials.db` (`llm_api_key`) or environment variable `SURICATA_LLM_API_KEY`; this field is only a temporary development override |
 
 > **API Key loading priority**, high to low: environment variable
@@ -146,10 +146,17 @@ enabled, `memory_max_pairs` must be at least 3.
 |--------|------|---------|-------------|
 | `prometheus_url` | string | - | vLLM Prometheus `/metrics` endpoint URL. Meaningful only when `type = "openai"` and the backend is vLLM. Used for detailed performance collection such as running request count, throughput, and GPU cache usage |
 
-> **Data egress warning**: when `type = "openai"` and `base_url` points to a
-> non-local address, the system logs a warning before the first call. Log data
-> will be sent to an external service; ensure this complies with your data
-> handling policies.
+> **Data egress warning**: when `type = "openai"` or `type = "deepseek"` and
+> `base_url` points to a non-local address, the system logs a warning before
+> the first call. Log data will be sent to an external service; ensure this
+> complies with your data handling policies.
+
+> **DeepSeek model names**: as of 2026-06-04, DeepSeek's current official chat
+> model names are `deepseek-v4-flash` and `deepseek-v4-pro`. The legacy
+> `deepseek-chat` and `deepseek-reasoner` aliases are scheduled for deprecation
+> on 2026-07-24 15:59 UTC. The native DeepSeek backend sends requests to
+> `/chat/completions` and maps the backend `think` flag to DeepSeek's
+> `thinking.type`.
 
 ### [llm.escalation]
 
@@ -398,8 +405,8 @@ Each model is keyed by its full model name and contains:
 | `top_p` | float | Fixed Top-p sampling parameter |
 | `top_k` | integer | Fixed Top-k sampling parameter |
 | `supports_tool_use` | boolean? | Optional override for tool-use detection: `true`, `false`, or omitted for auto-detection |
-| `backend_type` | string | Backend type: `"ollama"` or `"openai"`. If omitted, the global `[llm.backend].type` is used |
-| `backend_base_url` | string | Override for the global backend URL. If omitted or empty, global config is used |
+| `backend_type` | string | Backend type: `"ollama"`, `"openai"`, or `"deepseek"`. If omitted, the global `[llm.backend].type` is used |
+| `backend_base_url` | string | Backend URL override for this model. If omitted or empty, `ollama` uses `[ollama].base_url`, `openai` uses the global OpenAI backend URL when the global backend is also `openai`, and `deepseek` uses the global DeepSeek backend URL when the global backend is also `deepseek`, otherwise `https://api.deepseek.com` |
 | `backend_auth_token` | string | Override for the global auth token / API Key. If omitted or empty, global config is used |
 | `total_params_b` | float | Total parameter count in billions, used for hardware throughput estimation |
 | `active_params_b` | float | Parameters active per inference step; can be lower than total for MoE models |
@@ -409,11 +416,13 @@ Each model is keyed by its full model name and contains:
 | `max_requests_per_minute` | integer | Backend request rate limit. `0` means unlimited. Models sharing the same backend cache key use the strictest non-zero limit |
 
 > **Hybrid backend**: by declaring different `backend_type` values for
-> different models, a single instance can use local Ollama and remote
-> OpenAI-compatible backends at the same time. For example, real-time analysis
-> can use a local model (`backend_type = "ollama"`) while daily reports use a
-> remote model (`backend_type = "openai"`). The system caches backend instances
-> by `(backend_type, base_url, auth_token)`.
+> different models, a single instance can use local Ollama, remote
+> OpenAI-compatible backends, and the native DeepSeek backend at the same time.
+> For example, real-time analysis can use a local model
+> (`backend_type = "ollama"`) while daily reports use `deepseek-v4-flash`
+> (`backend_type = "deepseek"`). The system caches backend instances by
+> `(backend_type, base_url, auth_token)` and keeps DeepSeek's default URL
+> separate from OpenAI-compatible URLs.
 
 See [Performance Tuning](performance-tuning.md).
 
@@ -521,8 +530,8 @@ be commented out.
 The `[llm]` section stores the API Key for a remote LLM backend. During
 deployment it is written to `credentials.db` under the `llm_api_key` key. It can
 also be set at runtime through `PUT /credentials/llm_api_key` or the
-`SURICATA_LLM_API_KEY` environment variable. It is needed only when using
-`type = "openai"`.
+`SURICATA_LLM_API_KEY` environment variable. It is needed when using a remote
+backend such as `type = "openai"` or `type = "deepseek"`.
 
 ---
 

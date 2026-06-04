@@ -122,8 +122,8 @@ License:      MIT
 
 | 选项 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| `type` | string | `"ollama"` | 后端类型：`"ollama"`（本地推理）或 `"openai"`（OpenAI 兼容 API，涵盖 OpenAI、Azure OpenAI、vLLM） |
-| `base_url` | string | — | 全局 OpenAI 兼容 API 地址。全局后端为 `ollama` 时使用 `[ollama].base_url`；单个模型仍可通过 `ModelProfiles.toml` 的 `backend_base_url` 覆盖自身后端地址 |
+| `type` | string | `"ollama"` | 后端类型：`"ollama"`（本地推理）、`"openai"`（通用 OpenAI 兼容 API，涵盖 OpenAI、Azure OpenAI、vLLM）或 `"deepseek"`（原生 DeepSeek API 后端） |
+| `base_url` | string | — | 全局远程 API 地址。`openai` 后端需要显式设置；`deepseek` 省略时默认使用 `https://api.deepseek.com`。全局后端为 `ollama` 时使用 `[ollama].base_url`；单个模型仍可通过 `ModelProfiles.toml` 的 `backend_base_url` 覆盖自身后端地址 |
 | `auth_token` | string | — | Bearer 令牌 / API Key。建议通过 `credentials.db`（`llm_api_key` 键）或环境变量 `SURICATA_LLM_API_KEY` 管理，此处仅作开发阶段的临时覆盖 |
 
 > **API Key 加载优先级**（高→低）：环境变量 `SURICATA_LLM_API_KEY` → `credentials.db` 中的 `llm_api_key` → 配置文件 `auth_token`。
@@ -134,7 +134,9 @@ License:      MIT
 |------|------|--------|------|
 | `prometheus_url` | string | — | vLLM Prometheus `/metrics` 端点 URL。仅当 `type = "openai"` 且后端为 vLLM 时有意义。用于精细化性能采集（并发请求数、吞吐量、GPU 缓存利用率） |
 
-> **数据出境警告**：当 `type = "openai"` 且 `base_url` 指向非本地地址时，系统将在首次调用时记录警告日志。日志数据将发送至外部服务，请确保符合数据处理政策。
+> **数据出境警告**：当 `type = "openai"` 或 `type = "deepseek"`，且 `base_url` 指向非本地地址时，系统将在首次调用时记录警告日志。日志数据将发送至外部服务，请确保符合数据处理政策。
+>
+> **DeepSeek 模型名**：截至 2026-06-04，DeepSeek 当前官方聊天模型名为 `deepseek-v4-flash` 和 `deepseek-v4-pro`。旧的 `deepseek-chat` 与 `deepseek-reasoner` 别名计划在 2026-07-24 15:59 UTC 停用。原生 DeepSeek 后端请求 `/chat/completions`，并把后端 `think` 标志映射到 DeepSeek 的 `thinking.type`。
 
 ### [llm.escalation]
 
@@ -357,8 +359,8 @@ GPU 硬件参数，用于自适应调优的硬件饱和检测。
 | `top_p` | float | Top-p 采样参数（固定值） |
 | `top_k` | integer | Top-k 采样参数（固定值） |
 | `supports_tool_use` | boolean? | 可选覆盖 tool-use 能力检测（`true` / `false` / 省略自动检测） |
-| `backend_type` | string | 后端类型：`"ollama"` 或 `"openai"`。省略则使用全局 `[llm.backend].type` |
-| `backend_base_url` | string | 覆盖全局后端 URL。省略或为空则使用全局配置 |
+| `backend_type` | string | 后端类型：`"ollama"`、`"openai"` 或 `"deepseek"`。省略则使用全局 `[llm.backend].type` |
+| `backend_base_url` | string | 当前模型的后端 URL 覆盖。省略或为空时，`ollama` 使用 `[ollama].base_url`；`openai` 仅在全局后端同为 `openai` 时继承全局 OpenAI 后端 URL；`deepseek` 仅在全局后端同为 `deepseek` 时继承全局 DeepSeek 后端 URL，否则使用 `https://api.deepseek.com` |
 | `backend_auth_token` | string | 覆盖全局 auth token / API Key。省略或为空则使用全局配置 |
 | `total_params_b` | float | 模型总参数量（十亿参数），用于硬件吞吐估算 |
 | `active_params_b` | float | 单次推理激活参数量（MoE 模型可小于总参数量） |
@@ -367,7 +369,7 @@ GPU 硬件参数，用于自适应调优的硬件饱和检测。
 | `cost_per_1k_completion` | float | 每 1K completion token 成本；币种需与 `[cost].budget_per_hour` 一致，`0` 表示免费/本地；成本压力计算使用该字段 |
 | `max_requests_per_minute` | integer | 后端请求限速，`0` 表示不限速；同一后端缓存键共享最严格限速 |
 
-> **混合后端**：通过为不同模型声明不同的 `backend_type`，可在同一实例中同时使用本地 Ollama 和远程 OpenAI 兼容后端。例如实时分析使用本地模型（`backend_type = "ollama"`），日报生成使用远程模型（`backend_type = "openai"`）。系统按 `(backend_type, base_url, auth_token)` 三元组自动缓存后端实例，避免重复创建。
+> **混合后端**：通过为不同模型声明不同的 `backend_type`，可在同一实例中同时使用本地 Ollama、远程 OpenAI 兼容后端和原生 DeepSeek 后端。例如实时分析使用本地模型（`backend_type = "ollama"`），日报生成使用 `deepseek-v4-flash`（`backend_type = "deepseek"`）。系统按 `(backend_type, base_url, auth_token)` 三元组自动缓存后端实例，并让 DeepSeek 默认 URL 与 OpenAI 兼容 URL 保持隔离。
 
 详见 [性能调优](performance-tuning.md)。
 
@@ -456,7 +458,7 @@ client_secret = { "value" = "your-client-secret" }
 
 `[mail]` 节存放邮件认证凭据。Outlook 使用 `client_id` 和 `client_secret` 完成 OAuth2；Gmail Basic Auth 使用 `sender` 作为 SMTP 用户名、`client_secret` 作为密码。凭据已从主配置文件 `suricata-llm-agent.toml` 迁移至此处，部署时写入 `credentials.db`，运行时自动从数据库加载。若不使用邮件通知，可注释掉此节。
 
-`[llm]` 节存放远程 LLM 后端的 API Key。部署时写入 `credentials.db`（`llm_api_key` 键），也可以在运行时通过 `PUT /credentials/llm_api_key` 端点或环境变量 `SURICATA_LLM_API_KEY` 设置。仅在使用 `type = "openai"` 后端时需要。
+`[llm]` 节存放远程 LLM 后端的 API Key。部署时写入 `credentials.db`（`llm_api_key` 键），也可以在运行时通过 `PUT /credentials/llm_api_key` 端点或环境变量 `SURICATA_LLM_API_KEY` 设置。使用 `type = "openai"` 或 `type = "deepseek"` 等远程后端时需要。
 
 ---
 

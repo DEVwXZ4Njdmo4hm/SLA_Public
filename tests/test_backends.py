@@ -27,6 +27,7 @@ from src.llm_backend import (
 )
 from src.backends.ollama import OllamaBackend, _template_mentions_tools
 from src.backends.openai_compat import OpenAICompatBackend
+from src.backends.deepseek import DeepSeekBackend
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -583,6 +584,16 @@ class TestCreateBackend:
         backend = create_backend()
         assert backend.backend_type == "openai"
 
+    def test_creates_deepseek(self, fake_config):
+        fake_config.LLM_BACKEND_TYPE = "deepseek"
+        fake_config.LLM_BACKEND_BASE_URL = ""
+        fake_config.LLM_BACKEND_AUTH_TOKEN = "ds-test"
+        from src.backends import create_backend
+        backend = create_backend()
+        assert backend.backend_type == "deepseek"
+        assert backend._base_url == "https://api.deepseek.com"
+        assert backend._api_key == "ds-test"
+
     def test_unknown_type_raises(self, fake_config):
         fake_config.LLM_BACKEND_TYPE = "unknown"
         from src.backends import create_backend
@@ -881,6 +892,34 @@ class TestCreateBackendForModel:
         assert backend.backend_type == "openai"
         assert backend._base_url == "https://api.openai.com"
 
+    def test_deepseek_profile_creates_deepseek_backend(self, fake_config):
+        from tests.conftest import ModelProfile
+        from src.backends import create_backend_for_model
+        profile = ModelProfile(
+            name="deepseek-v4-flash",
+            backend_type="deepseek",
+            backend_base_url="",
+            backend_auth_token="ds-test-key",
+        )
+        backend = create_backend_for_model(profile)
+        assert backend.backend_type == "deepseek"
+        assert backend._base_url == "https://api.deepseek.com"
+        assert backend._api_key == "ds-test-key"
+
+    def test_deepseek_profile_ignores_different_global_remote_url(self, fake_config):
+        from tests.conftest import ModelProfile
+        from src.backends import create_backend_for_model
+        fake_config.LLM_BACKEND_TYPE = "openai"
+        fake_config.LLM_BACKEND_BASE_URL = "https://api.openai.com"
+        profile = ModelProfile(
+            name="deepseek-v4-flash",
+            backend_type="deepseek",
+            backend_base_url="",
+        )
+        backend = create_backend_for_model(profile)
+        assert backend.backend_type == "deepseek"
+        assert backend._base_url == "https://api.deepseek.com"
+
     def test_caches_same_triple(self, fake_config):
         from tests.conftest import ModelProfile
         from src.backends import create_backend_for_model
@@ -1061,6 +1100,19 @@ class TestBackendRateLimiterIntegration:
         assert backend._rate_limiter is not None
         assert backend._rate_limiter.capacity == 100.0
 
+    def test_deepseek_backend_receives_limiter(self, fake_config):
+        from tests.conftest import ModelProfile
+        from src.backends import create_backend_for_model
+        profile = ModelProfile(
+            name="deepseek-v4-pro",
+            backend_type="deepseek",
+            backend_auth_token="ds-test",
+            max_requests_per_minute=120,
+        )
+        backend = create_backend_for_model(profile)
+        assert backend._rate_limiter is not None
+        assert backend._rate_limiter.capacity == 120.0
+
     def test_ollama_backend_no_limiter_by_default(self, fake_config):
         from tests.conftest import ModelProfile
         from src.backends import create_backend_for_model
@@ -1200,6 +1252,216 @@ class TestOpenAI429Retry:
             )
         assert call_count == 2
         assert result.message.content == "reply"
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# DeepSeekBackend
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestDeepSeekProtocol:
+    def test_conforms_to_protocol(self):
+        backend = DeepSeekBackend()
+        assert isinstance(backend, LLMBackend)
+
+    def test_backend_type(self):
+        assert DeepSeekBackend().backend_type == "deepseek"
+
+
+class TestDeepSeekInit:
+    def test_default_base_url_matches_official_api(self):
+        b = DeepSeekBackend()
+        assert b._base_url == "https://api.deepseek.com"
+
+    def test_strips_trailing_slash(self):
+        b = DeepSeekBackend("https://api.deepseek.com/")
+        assert b._base_url == "https://api.deepseek.com"
+
+    def test_api_key_sets_bearer(self):
+        b = DeepSeekBackend(api_key="ds-test")
+        assert b._headers["Authorization"] == "Bearer ds-test"
+
+    def test_content_type_always_set(self):
+        b = DeepSeekBackend()
+        assert b._headers["Content-Type"] == "application/json"
+
+    def test_update_auth_token(self):
+        b = DeepSeekBackend(api_key="old")
+        b.update_auth_token("new")
+        assert b._headers["Authorization"] == "Bearer new"
+        assert b._api_key == "new"
+        b.update_auth_token("")
+        assert "Authorization" not in b._headers
+        assert b._api_key == ""
+
+
+class TestDeepSeekGenerate:
+    DEEPSEEK_RESPONSE = {
+        "choices": [{
+            "message": {"role": "assistant", "content": "  DeepSeek output  "},
+        }],
+        "usage": {"prompt_tokens": 21, "completion_tokens": 34, "total_tokens": 55},
+    }
+
+    @patch("src.backends.deepseek.requests.post")
+    def test_basic_generate_uses_official_chat_endpoint(self, mock_post):
+        mock_post.return_value = _mock_response(self.DEEPSEEK_RESPONSE)
+        b = DeepSeekBackend(api_key="ds-key", timeout=45)
+        result = b.generate("deepseek-v4-flash", "Hello")
+
+        assert isinstance(result, GenerateResult)
+        assert result.text == "DeepSeek output"
+        assert result.metrics.model == "deepseek-v4-flash"
+        assert result.metrics.prompt_tokens == 21
+        assert result.metrics.completion_tokens == 34
+
+        assert mock_post.call_args.args[0] == "https://api.deepseek.com/chat/completions"
+        assert mock_post.call_args.kwargs["timeout"] == 45
+        headers = mock_post.call_args.kwargs["headers"]
+        assert headers["Authorization"] == "Bearer ds-key"
+
+    @patch("src.backends.deepseek.requests.post")
+    def test_generate_payload_maps_protocol_fields(self, mock_post):
+        mock_post.return_value = _mock_response(self.DEEPSEEK_RESPONSE)
+        b = DeepSeekBackend()
+        b.generate(
+            "deepseek-v4-pro", "Analyze",
+            max_tokens=1024, temperature=0.2, top_p=0.8,
+            stop=["END"], think=True,
+        )
+
+        payload = mock_post.call_args.kwargs["json"]
+        assert payload == {
+            "model": "deepseek-v4-pro",
+            "messages": [{"role": "user", "content": "Analyze"}],
+            "max_tokens": 1024,
+            "temperature": 0.2,
+            "top_p": 0.8,
+            "stream": False,
+            "thinking": {"type": "enabled"},
+            "stop": ["END"],
+        }
+        assert "top_k" not in payload
+
+    @patch("src.backends.deepseek.requests.post")
+    def test_generate_disables_thinking_by_default(self, mock_post):
+        mock_post.return_value = _mock_response(self.DEEPSEEK_RESPONSE)
+        b = DeepSeekBackend()
+        b.generate("deepseek-v4-flash", "Hello")
+
+        payload = mock_post.call_args.kwargs["json"]
+        assert payload["thinking"] == {"type": "disabled"}
+
+
+class TestDeepSeekChat:
+    CHAT_RESPONSE = {
+        "choices": [{
+            "message": {
+                "role": "assistant",
+                "content": "I can help.",
+                "tool_calls": None,
+            },
+        }],
+        "usage": {"prompt_tokens": 10, "completion_tokens": 40},
+    }
+
+    @patch("src.backends.deepseek.requests.post")
+    def test_basic_chat(self, mock_post):
+        mock_post.return_value = _mock_response(self.CHAT_RESPONSE)
+        b = DeepSeekBackend()
+        result = b.chat("deepseek-v4-flash", [{"role": "user", "content": "Hi"}])
+
+        assert isinstance(result, ChatResult)
+        assert result.message.role == "assistant"
+        assert result.message.content == "I can help."
+        assert result.message.tool_calls is None
+        assert result.metrics.prompt_tokens == 10
+        assert result.metrics.completion_tokens == 40
+
+    @patch("src.backends.deepseek.requests.post")
+    def test_chat_with_tools(self, mock_post):
+        resp = {
+            "choices": [{
+                "message": {
+                    "role": "assistant",
+                    "content": "",
+                    "tool_calls": [{"id": "c1", "function": {"name": "fn", "arguments": "{}"}}],
+                },
+            }],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 20},
+        }
+        mock_post.return_value = _mock_response(resp)
+        b = DeepSeekBackend()
+        tools = [{"type": "function", "function": {"name": "fn"}}]
+        result = b.chat("deepseek-v4-pro", [{"role": "user", "content": "Do it"}], tools=tools)
+
+        assert result.message.tool_calls is not None
+        payload = mock_post.call_args.kwargs["json"]
+        assert payload["tools"] == tools
+        assert payload["thinking"] == {"type": "disabled"}
+
+    @patch("src.backends.deepseek.requests.post")
+    def test_chat_null_content_becomes_empty_string(self, mock_post):
+        resp = {
+            "choices": [{"message": {"role": "assistant", "content": None}}],
+            "usage": {},
+        }
+        mock_post.return_value = _mock_response(resp)
+        b = DeepSeekBackend()
+        result = b.chat("deepseek-v4-flash", [{"role": "user", "content": "Hi"}])
+        assert result.message.content == ""
+
+
+class TestDeepSeekStopAndDetect:
+    def test_stop_model_always_false(self):
+        b = DeepSeekBackend()
+        assert b.stop_model("deepseek-v4-flash") is False
+
+    def test_detect_tool_support_true(self):
+        b = DeepSeekBackend()
+        assert b.detect_tool_support("deepseek-v4-flash") is True
+
+
+class TestDeepSeek429Retry:
+    def test_retry_on_429_then_success(self):
+        call_count = 0
+
+        def mock_post(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            resp = MagicMock()
+            if call_count <= 2:
+                resp.status_code = 429
+                resp.headers = {"Retry-After": "0.01"}
+                resp.raise_for_status.side_effect = requests.HTTPError(response=resp)
+                return resp
+            resp.status_code = 200
+            resp.json.return_value = {
+                "choices": [{"message": {"role": "assistant", "content": "ok"}}],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 5},
+            }
+            resp.raise_for_status.return_value = None
+            return resp
+
+        with patch("src.backends.deepseek.requests.post", side_effect=mock_post):
+            backend = DeepSeekBackend(api_key="test")
+            result = backend.generate(model="deepseek-v4-flash", prompt="hello")
+        assert call_count == 3
+        assert result.text == "ok"
+
+    def test_max_retries_exceeded(self):
+        def mock_post(*args, **kwargs):
+            resp = MagicMock()
+            resp.status_code = 429
+            resp.headers = {}
+            resp.raise_for_status.side_effect = requests.HTTPError(response=resp)
+            return resp
+
+        with patch("src.backends.deepseek.requests.post", side_effect=mock_post):
+            backend = DeepSeekBackend(api_key="test")
+            backend._INITIAL_RETRY_DELAY = 0.001
+            backend._MAX_RETRY_DELAY = 0.001
+            with pytest.raises(requests.HTTPError):
+                backend.generate(model="deepseek-v4-flash", prompt="hello")
 
 
 # ═══════════════════════════════════════════════════════════════════════

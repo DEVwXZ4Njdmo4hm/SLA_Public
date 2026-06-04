@@ -273,7 +273,7 @@
           "properties": {
             "type": {
               "type": "string",
-              "enum": ["ollama", "openai"],
+              "enum": ["ollama", "openai", "deepseek"],
               "default": "ollama"
             },
             "base_url": {

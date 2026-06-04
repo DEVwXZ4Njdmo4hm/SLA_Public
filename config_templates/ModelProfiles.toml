@@ -30,9 +30,10 @@
 #   supports_tool_use           – Optional override for tool-use detection.
 #                                 true = force enable, false = force disable,
 #                                 omit = auto-detect at runtime via Ollama API.
-#   backend_type                – Backend to use: "ollama" (default) or "openai".
+#   backend_type                – Backend to use: "ollama" (default), "openai", or "deepseek".
 #   backend_base_url            – Override the global base URL for this model.
-#                                 Omit or leave empty to use the global setting.
+#                                 Omit or leave empty to use the same-type global
+#                                 URL, or DeepSeek's official default URL.
 #   backend_auth_token          – Override the global auth token / API key.
 #                                 Omit or leave empty to use the global setting.
 #   total_params_b              – Total model parameters in billions.
@@ -51,9 +52,9 @@
 total_vram_mb = 8192
 
 [model."your-model:tag"]
-# Backend type for this model ("ollama" or "openai"). Defaults to global LLM_BACKEND_TYPE.
+# Backend type for this model ("ollama", "openai", or "deepseek"). Defaults to global LLM_BACKEND_TYPE.
 # backend_type = "ollama"
-# Override global base URL for this model (leave commented to use global).
+# Override global base URL for this model (leave commented for same-type global/default).
 # backend_base_url = ""
 # Override global auth token for this model (leave commented to use global).
 # backend_auth_token = ""
@@ -86,4 +87,29 @@ top_k = 40
 # Cost factors (Improvement 30.5)
 # cost_per_1k_prompt = 0.0
 # cost_per_1k_completion = 0.0
+# max_requests_per_minute = 0
+
+# Native DeepSeek profile example. Uncomment and tune if you want daily reports,
+# escalation, or real-time analysis to route to DeepSeek independently of the
+# generic OpenAI-compatible backend.
+#
+# [model."deepseek-v4-flash"]
+# backend_type = "deepseek"
+# backend_base_url = ""          # Empty = https://api.deepseek.com
+# backend_auth_token = ""        # Empty = global llm_api_key / SURICATA_LLM_API_KEY
+# baseline_tps = 80.0
+# quality_score = 0.8
+# vram_calibration_context = 0
+# vram_calibration_mb = 0
+# context_length = { min = 8192, max = 1048576 }
+# num_predict = { min = 512, max = 8192 }
+# concurrency = { min = 1, max = 8 }
+# batch_size = { min = 10, max = 50 }
+# poll_interval = { min = 5, max = 30 }
+# temperature = 0.2
+# top_p = 0.9
+# top_k = 40
+# supports_tool_use = true
+# cost_per_1k_prompt = 0.00014
+# cost_per_1k_completion = 0.00028
 # max_requests_per_minute = 0

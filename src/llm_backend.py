@@ -100,7 +100,7 @@ class LLMBackend(Protocol):
 
     @property
     def backend_type(self) -> str:
-        """Return backend identifier: ``'ollama'``, ``'openai'``, etc."""
+        """Return backend identifier: ``'ollama'``, ``'openai'``, ``'deepseek'``, etc."""
         ...
 
     def generate(

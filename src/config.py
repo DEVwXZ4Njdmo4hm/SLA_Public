@@ -139,7 +139,7 @@ class ModelProfile:
     top_p: float
     top_k: int
     supports_tool_use: Optional[bool] = None  # None = auto-detect at runtime
-    backend_type: str = "ollama"               # "ollama" | "openai"
+    backend_type: str = "ollama"               # "ollama" | "openai" | "deepseek"
     backend_base_url: str = ""                 # empty = use global config
     backend_auth_token: str = ""               # empty = use global LLM_BACKEND_AUTH_TOKEN
 
@@ -313,8 +313,8 @@ class Config:
     STATS_TEMPLATE_NAME: str = "suricata-ai-agent-stats"
 
     # LLM Backend Configuration
-    LLM_BACKEND_TYPE: str = "ollama"       # "ollama" | "openai"
-    LLM_BACKEND_BASE_URL: str = ""          # only used when type = "openai"
+    LLM_BACKEND_TYPE: str = "ollama"       # "ollama" | "openai" | "deepseek"
+    LLM_BACKEND_BASE_URL: str = ""          # only used when type = "openai" or "deepseek"
     LLM_BACKEND_AUTH_TOKEN: str = ""        # Bearer token / API key
     LLM_BACKEND_VLLM_PROMETHEUS_URL: str = ""  # optional vLLM /metrics endpoint
 
@@ -569,9 +569,9 @@ class Config:
         llm_backend = llm.get("backend", {})
         if "type" in llm_backend:
             self.LLM_BACKEND_TYPE = str(llm_backend["type"]).lower()
-        if self.LLM_BACKEND_TYPE not in ("ollama", "openai"):
+        if self.LLM_BACKEND_TYPE not in ("ollama", "openai", "deepseek"):
             raise ValueError(
-                f"llm.backend.type must be 'ollama' or 'openai', "
+                f"llm.backend.type must be 'ollama', 'openai', or 'deepseek', "
                 f"got: {self.LLM_BACKEND_TYPE!r}"
             )
         if "base_url" in llm_backend:
@@ -1010,7 +1010,7 @@ class Config:
                     top_p=float(payload.get("top_p", 0.9)),
                     top_k=int(payload.get("top_k", 40)),
                     supports_tool_use=payload.get("supports_tool_use"),
-                    backend_type=str(payload.get("backend_type", self.LLM_BACKEND_TYPE)),
+                    backend_type=str(payload.get("backend_type", self.LLM_BACKEND_TYPE)).lower(),
                     backend_base_url=str(payload.get("backend_base_url", "")),
                     backend_auth_token=str(payload.get("backend_auth_token", "")),
                     total_params_b=float(payload.get("total_params_b", 0.0)),

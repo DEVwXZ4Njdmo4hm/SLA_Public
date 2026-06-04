@@ -12,7 +12,7 @@ License:      MIT
 
 ## 概述
 
-Suricata LLM Agent 内置了基于 EMA（指数移动平均）的自适应性能调优系统，根据 LLM 运行时吞吐量、处理压力、本地 GPU 约束和可选成本预算实时调整调用参数，在分析质量和处理速度之间寻找最优平衡。该系统同时适用于本地 Ollama 后端和 OpenAI 兼容后端；远程后端没有硬件信息时，会自动退化为 token 吞吐量与成本信号驱动。
+Suricata LLM Agent 内置了基于 EMA（指数移动平均）的自适应性能调优系统，根据 LLM 运行时吞吐量、处理压力、本地 GPU 约束和可选成本预算实时调整调用参数，在分析质量和处理速度之间寻找最优平衡。该系统同时适用于本地 Ollama 后端、OpenAI 兼容后端和原生 DeepSeek 后端；远程后端没有硬件信息时，会自动退化为 token 吞吐量与成本信号驱动。
 
 核心实现位于 `src/perf_cacl.py`。
 
@@ -99,7 +99,7 @@ $$
 
 每个 batch 处理完成后，`record_token_stats()` 记录后端统一返回的 `LLMMetrics` 指标：
 
-- **completion_tokens_per_sec**：实际 completion token 生成速度（EMA 平滑）。Ollama 会使用后端返回的生成阶段耗时；OpenAI 兼容后端通常使用请求 wall-clock 耗时作为回退。
+- **completion_tokens_per_sec**：实际 completion token 生成速度（EMA 平滑）。Ollama 会使用后端返回的生成阶段耗时；OpenAI 兼容 API 与 DeepSeek 等远程后端通常使用请求 wall-clock 耗时作为回退。
 - **tokens_per_log**：每条日志的平均 completion token 消耗（EMA 平滑）
 - **prompt_tokens / completion_tokens**：进入 `TokenStatsWindow`，用于 `/stats` 和 ES 统计索引中的滑动窗口聚合。
 
@@ -154,7 +154,7 @@ max_requests_per_minute = 0
 
 ### 混合后端
 
-不同模型可以声明不同的 `backend_type`，使同一实例同时使用本地和远程后端：
+不同模型可以声明不同的 `backend_type`，使同一实例同时使用本地 Ollama、远程 OpenAI 兼容后端和原生 DeepSeek 后端：
 
 ```toml
 # 本地 Ollama 模型——实时分析
@@ -170,6 +170,13 @@ backend_base_url = "https://api.openai.com"
 # backend_auth_token 留空则使用全局 API Key
 baseline_tps = 80.0
 # ...
+
+# 原生 DeepSeek 模型——日报 / 升级处理
+[model."deepseek-v4-flash"]
+backend_type = "deepseek"
+# backend_base_url 留空则使用 https://api.deepseek.com
+baseline_tps = 80.0
+# ...
 ```
 
 系统按 `(backend_type, base_url, auth_token)` 三元组缓存按模型路由的后端实例。实时分析模型由当前 `CURRENT_PERF_CONFIG.OLLAMA_MODEL` 决定，`adaptive_select()` 在当前模型档案的参数范围内调节上下文、生成长度、并发、批量和轮询间隔；日报模型由 `daily_report_llm_conf.toml` 的 `MODEL` 字段决定。两者可使用不同后端。
@@ -183,7 +190,7 @@ baseline_tps = 80.0
 ```
 实时分析  →  本地 Ollama（低延迟、低成本）
 升级处理  →  远程 OpenAI API（高精度）
-日报生成  →  远程 OpenAI API（大上下文）
+日报生成  →  原生 DeepSeek API（大上下文）
 ```
 
 升级模型的参数（`max_tokens`、`context_length`、`temperature` 等）由 `[llm.escalation]` 配置节独立控制，不受自适应调优算法影响——因为升级调用是低频且高优先级的，不适合做动态参数压缩。

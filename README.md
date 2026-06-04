@@ -15,17 +15,17 @@ Date:         2026-05-31
 
 Suricata LLM Agent is a real-time Suricata IDS log analysis engine powered by
 large language models. It reads Suricata `eve.json` events from Elasticsearch,
-uses a local Ollama backend or an OpenAI-compatible backend (OpenAI, Azure
-OpenAI, vLLM, and similar services) to generate automated threat assessments
-and security recommendations, and writes the analysis results back to
-Elasticsearch.
+uses local Ollama, generic OpenAI-compatible APIs (OpenAI, Azure OpenAI, vLLM,
+and similar services), or the native DeepSeek API backend to generate automated
+threat assessments and security recommendations, and writes the analysis
+results back to Elasticsearch.
 
 ## Core Features
 
 - **Real-time traffic analysis** - Batch-fetches unprocessed logs and calls LLMs concurrently to generate threat assessments and security recommendations.
 - **Multiple memory modes** - Supports communication-pair, global, protocol-pair, and rolling-compaction memory for real-time correlation analysis.
 - **Multi-level daily reports** - Supports hierarchical, communication-pair-only, and flat daily report modes, with HTML output and email delivery.
-- **Hybrid LLM backends** - Routes models within the same instance to Ollama or OpenAI-compatible APIs, with vLLM metrics collection and request rate limiting.
+- **Hybrid LLM backends** - Routes models within the same instance to Ollama, OpenAI-compatible APIs, or the native DeepSeek API backend, with vLLM metrics collection and request rate limiting.
 - **Adaptive performance tuning** - Uses an EMA-based pressure-quality model to adjust model parameters based on LLM throughput, local GPU constraints, and optional cost budgets.
 - **Remote Management Interface (RMI)** - Provides a FastAPI REST API for runtime status queries and manual daily report generation.
 - **Mail queue** - Includes exponential backoff retries, persistent spooling, and dead-letter archiving.
@@ -43,7 +43,7 @@ Elasticsearch.
 - Python >= 3.12
 - Elasticsearch for log storage and querying
 - [Ollama](https://ollama.com/) when using a local backend
-- An OpenAI-compatible API service when using a remote backend or vLLM
+- An OpenAI-compatible API service or a DeepSeek API key when using a remote backend
 - Podman + systemd for containerized deployment
 
 ## Quick Start
@@ -89,8 +89,8 @@ password = "your-es-password"
 index_pattern = "suricata-eve-*"
 
 [llm.backend]
-type = "ollama"       # Or "openai"
-# base_url = "https://api.example.com/v1"   # Required for the openai backend
+type = "ollama"       # Or "openai" / "deepseek"
+# base_url = "https://api.example.com"      # Required for openai; optional for deepseek
 
 [ollama]
 base_url = "http://localhost:11434"
@@ -154,7 +154,7 @@ suricata_llm_agent_pkg/
 │   ├── perf_cacl.py             # Adaptive performance tuning
 │   ├── auth/                    # U-A-P users, roles, JWT, API keys, SSE logs
 │   ├── executor/                # Capability registry, policy, PathGuard, audit, handlers
-│   ├── backends/                # Ollama / OpenAI-compatible backends and rate limiting
+│   ├── backends/                # Ollama / OpenAI-compatible / DeepSeek backends and rate limiting
 │   └── mailer/                  # Mail sending, OAuth2, retry queue, recipient resolution
 ├── configs/                     # Capabilities, schemas, base images, package managers, templates
 │   ├── capabilities/            # Executor capability declarations

@@ -101,6 +101,23 @@
           "type": "integer",
           "minimum": 1
         },
+        "supports_tool_use": {
+          "type": "boolean",
+          "description": "Explicit tool-use support override. Omit to auto-detect at runtime."
+        },
+        "backend_type": {
+          "type": "string",
+          "enum": ["ollama", "openai", "deepseek"],
+          "description": "LLM backend for this model. Omit to use global llm.backend.type."
+        },
+        "backend_base_url": {
+          "type": "string",
+          "description": "Optional backend URL override for this model."
+        },
+        "backend_auth_token": {
+          "type": "string",
+          "description": "Optional backend API key / token override for this model."
+        },
         "total_params_b": {
           "type": "number",
           "minimum": 0,

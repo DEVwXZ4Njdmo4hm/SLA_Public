@@ -71,12 +71,18 @@ memory_maxpair_lru_evict = 0
 # memory_compact_threshold = 10
 # memory_compact_batch = 8
 
-# Backend selection: "ollama" (default, local inference) or "openai" (OpenAI-compatible API).
-# When set to "openai", the agent uses /v1/chat/completions for all LLM calls,
-# compatible with OpenAI, Azure OpenAI, vLLM, and other OpenAI-API servers.
+# Backend selection:
+#   "ollama"   - local inference through Ollama
+#   "openai"   - generic OpenAI-compatible API (/v1/chat/completions)
+#   "deepseek" - native DeepSeek API backend (/chat/completions)
+#
+# DeepSeek defaults to https://api.deepseek.com when base_url is omitted.
+# As of 2026-06-04, DeepSeek's current model names are deepseek-v4-flash
+# and deepseek-v4-pro. The legacy deepseek-chat and deepseek-reasoner names
+# are scheduled for deprecation on 2026-07-24 15:59 UTC.
 [llm.backend]
 type = "ollama"
-# base_url = ""       # Override base URL (defaults to [ollama].base_url for ollama backend)
+# base_url = ""       # Override base URL (openai/deepseek; ollama uses [ollama].base_url)
 # auth_token = ""     # Bearer token; prefer credentials.db llm_api_key or SURICATA_LLM_API_KEY env var
 
 # Optional: vLLM Prometheus metrics endpoint for fine-grained performance monitoring.
